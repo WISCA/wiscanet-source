@@ -1,0 +1,237 @@
+#!/bin/bash
+
+USR_ID=$USER
+HOME="/home/$USR_ID/wdemo/"
+
+function valid_ip() {
+
+    local  ip=$1
+    local  stat=1
+
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
+}
+
+function usrConfig {
+
+    ipFn="$HOME/usr/cfg/iplist";
+    cfgFn="$HOME/usr/cfg/usrconfig_$1.xml"
+    rfCfgFn="$HOME/usr/mat/$6/usrRfConfig.xml"
+
+    if [ -e $ipFn ]; then (echo "$1" >> $ipFn);
+    else (echo "$1" > $ipFn);
+    fi
+
+    (echo "<? xml version=\"1.0\" ?>" > $cfgFn);
+    (echo "<UsrConfig>" >> $cfgFn);
+    (echo "    <LogicId> $2 </LogicId>" >> $cfgFn);
+    (echo "    <OpMode> $3 </OpMode>" >> $cfgFn);
+    (echo "    <MacMode> $4 </MacMode>" >> $cfgFn);
+    (echo "    <Tslot> $5 </Tslot>" >> $cfgFn);
+    (echo "    <matDir> $6 </matDir>" >> $cfgFn);
+    (echo "    <BbMatlab> $7 </BbMatlab>" >> $cfgFn);
+    (echo "    <LogMatlab> $8 </LogMatlab>" >> $cfgFn);
+    (echo "    <nsamps> $9  </nsamps>" >> $cfgFn);
+    (echo "    <rate> ${10} </rate>" >> $cfgFn);
+    (echo "    <subdev> ${11} </subdev>" >> $cfgFn);
+    (echo "    <freq> ${12} </freq>" >> $cfgFn);
+    (echo "    <txgain> ${13} </txgain>" >> $cfgFn);
+    (echo "    <rxgain> ${14} </rxgain>" >> $cfgFn);
+    (echo "    <bw> ${15} </bw>" >> $cfgFn);
+    (echo "</UsrConfig>" >> $cfgFn);
+}
+
+function usrInstall {
+
+    ipFn="$HOME/usr/cfg/iplist";
+
+    echo Install USER code to cnode $1...;
+    (cd $HOME/usr; tar cfz $HOME/usr/tools/usr.tgz mat cfg);
+    (cd $HOME/usr/tools; ssh $USR_ID@$1 'cd wdemo/run/usr/; rm -rf *'; scp usr.tgz $USR_ID@$1:wdemo/run/usr; ssh $USR_ID@$1 'cd wdemo/run/usr; tar xfz usr.tgz; rm -f usr.tgz');
+    (rm -f $HOME/usr/tools/usr.tgz);
+    (rm -f $ipFn);
+}
+
+###########################################
+#    MAIN routine starts here
+###########################################
+
+echo  ""
+echo  ""
+echo ========== start of setup ==============
+
+cIPAddr=" ";
+eLogicId=0;
+eIPAddr=" ";
+eOpMode=" ";
+eMacMode=" ";
+tSlot=0; 
+matDir=" "; 
+bbMatlab=" "; 
+logMatlab=" ";
+
+#while getopts ":t:c:e:i:m:M:s:b:l:d:" opt; do
+#
+#  case $opt in
+#    t) opType=$OPTARG;
+#      if ( [ $opType != 'CFG' ] && [ $opType != 'INST' ] ); then
+#          echo "wrong operation type!!";
+#          exit 1;
+#      fi
+#      ;;
+#    c) cIPAddr=$OPTARG;
+#      if ( !( valid_ip $cIPAddr ) ); then
+#          echo "worng cnode IP address";
+#          exit 1;
+#      fi
+#      echo "+ cnode IP address = " $cIPAddr
+#      ;;
+#    e) eIPAddr=$OPTARG;
+#      if ( !( valid_ip $eIPAddr ) ); then
+#          echo "worng enode IP address";
+#          exit 1;
+#      fi
+#      echo "+ enode IP address = " $eIPAddr;
+#      ;;
+#    i) eLogicId=$OPTARG;
+#      echo "+ node logical ID = " $eLogicId;
+#      ;;
+#    m) eOpMode=$OPTARG;
+#      echo "+ enode Operation Mode = " $eOpMode;
+#      ;;
+#    M) eMacMode=$OPTARG;
+#      echo "+ enode MAC Mode = " $eMacMode;
+#      ;;
+#    s) tSlot=$OPTARG;
+#      echo "+ enode TX time slot = " $tSlot;
+#      ;;
+#    b) bbMatlab=$OPTARG;
+#      echo "+ enode Baseband Matlab fn = " $bbMatlab;
+#      ;;
+#    l) logMatlab=$OPTARG;
+#      echo "+ enode Log Analysis Matlab fn = " $logMatlab;
+#      ;;
+#    d) matDir=$OPTARG;
+#      echo "+ enode matlab director = " $matDir;
+#      ;;
+#    \?)
+#      echo "Invalid option: -$OPTARG" >&2
+#      exit 1
+#      ;;
+#    :)
+#      echo "Option -$OPTARG requires an argument." >&2
+#      exit 1
+#      ;;
+#  esac
+#done
+
+TEMP=`getopt -o t:c:e:i:m:M:s:b:l:d: --long ns:,rt:,sd:,fq:,tg:,rg:,bw:  -n 'example.bash' -- "$@"`
+eval set -- "$TEMP"
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+while true ; do
+
+  case "$1" in
+    -t) opType=$2;
+      if ( [ $opType != 'CFG' ] && [ $opType != 'INST' ] ); then
+          echo "wrong operation type!!";
+          exit 1;
+      fi
+      shift; shift;
+      ;;
+    -c) cIPAddr=$2;
+      if ( !( valid_ip $cIPAddr ) ); then
+          echo "worng cnode IP address";
+          exit 1;
+      fi
+      echo "+ cnode IP address = " $cIPAddr
+      shift; shift;
+      ;;
+    -e) eIPAddr=$2;
+      if ( !( valid_ip $eIPAddr ) ); then
+          echo "worng enode IP address";
+          exit 1;
+      fi
+      echo "+ enode IP address = " $eIPAddr;
+      shift; shift;
+      ;;
+    -i) eLogicId=$2;
+      echo "+ node logical ID = " $eLogicId;
+      shift; shift;
+      ;;
+    -m) eOpMode=$2;
+      echo "+ enode Operation Mode = " $eOpMode;
+      shift; shift;
+      ;;
+    -M) eMacMode=$2;
+      echo "+ enode MAC Mode = " $eMacMode;
+      shift; shift;
+      ;;
+    -s) tSlot=$2;
+      echo "+ enode TX time slot = " $tSlot;
+      shift; shift;
+      ;;
+    -b) bbMatlab=$2;
+      echo "+ enode Baseband Matlab fn = " $bbMatlab;
+      shift; shift;
+      ;;
+    -l) logMatlab=$2;
+      echo "+ enode Log Analysis Matlab fn = " $logMatlab;
+      shift; shift;
+      ;;
+    -d) matDir=$2;
+      echo "+ enode matlab director = " $matDir;
+      shift; shift;
+      ;;
+    --ns) nSamp=$2;
+      echo "+ number of samples = " $nSamp;
+      shift; shift;
+      ;;
+    --rt) rate=$2;
+      echo "+ data rate = " $rate;
+      shift; shift;
+      ;;
+    --sd) subdev=$2;
+      echo "+ subdev = " $subdev;
+      shift; shift;
+      ;;
+    --fq) freq=$2;
+      echo "+ freqeuency = " $freq;
+      shift; shift;
+      ;;
+    --tg) txgain=$2;
+      echo "+ tx gain = " $txgain;
+      shift; shift;
+      ;;
+    --rg) rxgain=$2;
+      echo "+ rx gain = " $rxgain;
+      shift; shift;
+      ;;
+    --bw) bandwidth=$2;
+      echo "+ band width = " $bandwidth;
+      shift; shift;
+      ;;
+    --) shift; shift;
+      break
+      ;;
+    * ) break
+      ;;
+  esac
+done
+
+if ( [ "$opType" == "INST" ] ); then
+    usrInstall $cIPAddr
+elif ( [ "$opType" == "CFG" ] ); then
+    usrConfig  $eIPAddr $eLogicId $eOpMode $eMacMode $tSlot $matDir $bbMatlab $logMatlab $nSamp $rate $subdev $freq $txgain $rxgain $bandwidth
+fi
+
+echo =========== end of setup ===============

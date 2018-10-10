@@ -1,0 +1,4 @@
+#!/bin/bash
+./uInstall -t CFG -e 10.206.201.85 -i 0 -m TX -M UMAC -s 0 -d UMAC_sin -b tx_sine -l NULL
+./uInstall -t CFG -e 10.206.201.116 -i 1 -m RX -M UMAC -s 1 -d UMAC_sin -b rx_sine -l rx_log
+./uInstall -t INST -c 10.206.201.85

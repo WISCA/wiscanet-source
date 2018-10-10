@@ -1,0 +1,21 @@
+#!/bin/bash
+
+USER_ID=wisca
+HOST_UID=$USER
+
+source ../ipList
+
+CNODE=$USRP31
+ENODE0=$USRP31
+ENODE1=$USRP32
+
+cd ..
+genMatInst 31 32
+cp matInst /home/$HOST_UID/wdemo/dev/umat/tools/cli
+rm -f matInst
+cd users
+
+./pInstall -i $USER_ID -t cnode -c $CNODE
+./pInstall -i $USER_ID -t enode -c $CNODE -e $ENODE0
+./pInstall -i $USER_ID -t enode -c $CNODE -e $ENODE1
+./pInstall -i $USER_ID -t usr   -u $CNODE

@@ -1,0 +1,1 @@
+{"fname":"umac_sin_config","nodeNum":2,"cIp":"10.206.201.85","enode":[{"eIp":"10.206.201.85","lId":"0","trxs":"TX","mmod":"UMAC","tslot":"0","matDir":"UMAC_sin","usrMat":"tx_sine","logMat":"NULL"},{"eIp":"10.206.201.116","lId":"1","trxs":"RX","mmod":"UMAC","tslot":"1","matDir":"UMAC_sin","usrMat":"rx_sine","logMat":"rx_log"}]}

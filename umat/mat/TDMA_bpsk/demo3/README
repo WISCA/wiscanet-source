@@ -1,0 +1,8 @@
+three node example
+
+node 0 : transmit
+node 1 : relay
+node 2 : reception
+
+bug:
+  relay node has error in its data retransmission path

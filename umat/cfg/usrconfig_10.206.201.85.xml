@@ -1,0 +1,17 @@
+<? xml version="1.0" ?>
+<UsrConfig>
+    <LogicId> 0 </LogicId>
+    <OpMode> TX </OpMode>
+    <MacMode> UMAC </MacMode>
+    <Tslot> 0 </Tslot>
+    <matDir> UMAC_sin </matDir>
+    <BbMatlab> tx_sine </BbMatlab>
+    <LogMatlab> NULL </LogMatlab>
+    <nsamps> 200000  </nsamps>
+    <rate>   10e6   </rate>
+    <subdev> A:B   </subdev>
+    <freq>   0.95E9   </freq>
+    <txgain> 40    </txgain>
+    <rxgain> 40    </rxgain>
+    <bw>     20E6 </bw>
+</UsrConfig>

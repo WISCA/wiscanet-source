@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>System Configuration Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style type="text/css">
+        * { outline: none; }
+        body {
+            background-color: #789; margin: 0;
+            padding: 0; font: 16px/1.4 Helvetica, Arial, sans-serif;
+            font: 16px/1.4 Helvetica, Arial, sans-serif;
+        }
+        div.content {
+            width: 800px; margin: 2em auto; padding: 20px 50px;
+            background-color: #fff; border-radius: 1em;
+        }
+        code { background: #eee; padding: 0 0.3em; border-radius: 0.2em; }
+        label { display: inline-block; min-width: 5em; }
+        input { border: 1px solid #ccc; padding: 0.1em; margin-right: 0.0em; }
+        table, th, td { border: 1px solid black; }
+    </style>
+
+    <script src="jquery-1.11.3.min.js"></script>
+    <script language="javascript" type="text/javascript">
+        jQuery(function() {
+        });
+    </script>
+</head>
+
+<body>
+<script>
+</script>
+
+    <div class="content">
+        <img src="wisca-logo-v3.png" style="float:right; height: 80px; border-radius: 3px;">
+        <h1>Software Defined Radio Network (SDR-N)</h1>
+        <p id="config_head"> Network Configuration Page </p>
+        <p id="cnodeConf"></p>
+        <p id="enodeConf"></p>
+        <button type="submit" onclick="window.history.back()">Home</button>
+        <button type="submit" onclick="submitNGoBack()">Submit</button>
+        <button type="submit" onclick="addEnode()">More enode</button> <br><br>
+
+        <button type="submit" onclick="saveConfig()">Save: </button> <input type="text" id="svfn" size=20><br>
+
+        <button type="submit" onclick="loadCnf()">Load: </button> <input type="text" id="ldfn" value=" " size=20>
+        <input type="file" id="loadCnfFilePopup" style="display: none">
+        <p id="respMsg"></p>
+    </div>
+
+    <script>
+        var maxNode = 16;
+        var nodeNum = 1;
+
+
+        function parseCfgJsonData(cfgData) {
+            x = JSON.parse(cfgData);
+            nodeNum = x.nodeNum;
+            document.getElementById("cIp").value = x.cIp;
+            document.getElementById("enodeConf").innerHTML = enodeConf();
+            for(i=0; i<nodeNum; i++) {
+                document.getElementById("eIp" + i).value = x.enode[i].eIp;
+                document.getElementById("lId" + i).value = x.enode[i].lId;
+                document.getElementById("trxs" + i).value = x.enode[i].trxs;
+                document.getElementById("mmod" + i).value = x.enode[i].mmod;
+                document.getElementById("tslot" + i).value = x.enode[i].tslot;
+                document.getElementById("matDir" + i).value = x.enode[i].matDir;
+                document.getElementById("usrMat" + i).value = x.enode[i].usrMat;
+                document.getElementById("logMat" + i).value = x.enode[i].logMat;
+            }
+//document.getElementById("respMsg").innerHTML = "parseCfgJsonData(): " + cfgData + "+++" + nodeNum + " " + x.nodeNum;
+        }
+
+        function loadCnf() {
+            document.getElementById("loadCnfFilePopup").click();
+        }
+
+        function loadConfig(evt) {
+            r = new FileReader();
+            f = evt.target.files[0];
+            r.readAsText(f);
+            r.onload = function(e) {
+                document.getElementById("ldfn").value = f.name;
+                parseCfgJsonData(r.result);
+                document.getElementById("respMsg").innerHTML = "[ Config Load OK ]";
+            };    
+        }
+
+
+        function buildCfgJsonData(fname) {
+            var i, x;
+            var netObj = {"fname":null, "nodeNum":null, "cIp":null, "enode":[{}] }; 
+
+            netObj.fname = fname;
+            netObj.nodeNum = nodeNum;
+            netObj.cIp = document.getElementById("cIp").value;
+            for(i=0; i<nodeNum; i++) {
+                netObj.enode[i] = {"eIp":null,"lId":null,"trxs":null,"mmod":null,"tslot":null,"matDir":null,"usrMat":null,"logMat":null};
+                netObj.enode[i].eIp = document.getElementById("eIp" + i).value; 
+                netObj.enode[i].lId = document.getElementById("lId" + i).value;
+                netObj.enode[i].trxs = document.getElementById("trxs" + i).value;
+                netObj.enode[i].mmod = document.getElementById("mmod" + i).value;
+                netObj.enode[i].tslot = document.getElementById("tslot" + i).value;
+                netObj.enode[i].matDir = document.getElementById("matDir" + i).value;
+                netObj.enode[i].usrMat = document.getElementById("usrMat" + i).value;
+                netObj.enode[i].logMat = document.getElementById("logMat" + i).value;
+            }
+            x = JSON.stringify(netObj);
+            return x;
+        }
+
+        function saveConfig(evt) {
+            var x;
+            var fname = document.getElementById("svfn").value;
+            x = buildCfgJsonData(fname);
+            $.ajax({
+                url: '/save',
+                method: 'POST',
+                dataType: 'html',
+                data: x
+            });
+            document.getElementById("respMsg").innerHTML = "[ Config Save OK ]";
+        }
+
+        function submitNGoBack() {
+            var x
+            var fname = document.getElementById("svfn").value;
+            x = buildCfgJsonData(fname);
+            $.ajax({
+                url: '/cfg',
+                method: 'POST',
+                dataType: 'html',
+                data: x
+            });
+            document.getElementById("respMsg").innerHTML = "[ Config Submit OK ]";
+        }
+
+        function cnodeConf() {
+            var x = "\<hr\>";
+            x = x + "cnode: IP Addr \<input type=\"text\" size=\"13\" id=\"cIp\"\>";
+            x = x + "\<br\>";
+            return x;
+        }
+
+        function oneEnodeConf(count) {
+            var x = '<hr>';
+            x = x + 'enode-' + count + ':';
+            x = x + '<table id="myTable">';
+            x = x + '<tr align="center">';
+            x = x + '<td>IPaddr</td>';
+            x = x + '<td>LogicId</td>';
+            x = x + '<td>TRXmode</td>';
+            x = x + '<td>MACmode</td>';
+            x = x + '<td>TXSlot</td>';
+            x = x + '<td>MATDir</td>';
+            x = x + '<td>usrMAT</td>';
+            x = x + '<td>logMAT</td>';
+            x = x + '</tr>';
+            x = x + '<tr>';
+            x = x + '<td> <input type="text" size="13" id="eIp' + count + '"> </td>';
+            x = x + '<td> <input type="text" size="6" id="lId' + count + '"> </td>';
+            x = x + '<td> <select id="trxs' + count + '"><option value="TX">TX</option><option value="RX">RX</option><option value="TX/RX">TX/RX</option>';
+            x = x + '<td> <select id="mmod' + count + '"><option value="TDMA">TDMA</option><option value="UMAC">UMAC</option>';
+            x = x + '<td> <input type="text" size="5" id="tslot' + count + '"> </td>';
+            x = x + '<td> <input type="text" size="10" id="matDir' + count + '"> </td>';
+            x = x + '<td> <input type="text" size="8" id="usrMat' + count + '"> </td>';
+            x = x + '<td> <input type="text" size="8" id="logMat' + count + '"> </td>';
+            x = x + '</tr>';
+            x = x + '</table>';
+            return x;
+        }
+
+        function enodeConf() {
+            var x = "";
+            for(count = 0; count < nodeNum; count++) x = x + oneEnodeConf(count);
+            return x;
+        }
+
+        function addEnode() {
+            if(nodeNum < maxNode) nodeNum = nodeNum + 1;
+            document.getElementById("enodeConf").innerHTML = enodeConf();
+        }
+
+        document.getElementById("cnodeConf").innerHTML = cnodeConf();
+        document.getElementById("enodeConf").innerHTML = enodeConf();
+        document.getElementById("loadCnfFilePopup").addEventListener("change", loadConfig, false);
+
+    </script>
+
+</body>
+
+</html>

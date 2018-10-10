@@ -1,0 +1,37 @@
+#=================================================
+TEST_SUIT="SUIT-1"
+#=================================================
+
+# UMAC SINE wave
+if ( [ "$TEST_SUIT" == "SUIT-1" ] ); then
+./uInstall -t CFG -e $ENODE0 -i 0 -m TX -M UMAC -s 0 -d UMAC_sin -b tx_sine -l NULL   --ns 200000 --rt 10e6 --sd A:B --fq 0.9E9 --tg 50 --rg 40 --bw 100E6
+./uInstall -t CFG -e $ENODE1 -i 1 -m RX -M UMAC -s 1 -d UMAC_sin -b rx_sine -l rx_log --ns 200000 --rt 10e6 --sd A:B --fq 0.9E9 --tg 40 --rg 40 --bw 100E6
+./uInstall -t INST -c $CNODE
+fi
+
+# TDMA SINE wave
+if ( [ "$TEST_SUIT" == "SUIT-2" ] ); then
+./uInstall -t CFG -e $ENODE0 -i 0 -m TX -M TDMA -s 0 -d TDMA_sin -b tx_sin  -l NULL       --ns 50000 --rt 10e6 --sd A:B --fq 0.9E9 --tg 50 --rg 40 --bw 100E6
+./uInstall -t CFG -e $ENODE1 -i 1 -m RX -M TDMA -s 1 -d TDMA_sin -b rx_dump -l rx_sin_log --ns 50000 --rt 10e6 --sd A:B --fq 0.9E9 --tg 40 --rg 40 --bw 100E6
+./uInstall -t INST -c $CNODE
+fi
+
+# TDMA BPSK DEMO2
+if ( [ "$TEST_SUIT" == "SUIT-3" ] ); then
+./uInstall -t CFG -e $ENODE0 -i 0 -m TX -M TDMA -s 0 -d TDMA_bpsk/demo2 -b tx2 -l txlog2 --ns 10000 --rt 1e6 --sd A:B --fq 0.9E9 --tg 50 --rg 40 --bw 100E6
+./uInstall -t CFG -e $ENODE1 -i 1 -m RX -M TDMA -s 1 -d TDMA_bpsk/demo2 -b rx2 -l rxlog2 --ns 10000 --rt 1e6 --sd A:B --fq 0.9E9 --tg 40 --rg 40 --bw 100E6
+./uInstall -t INST -c $CNODE
+fi
+
+# UMAC SINE wave X310
+if ( [ "$TEST_SUIT" == "SUIT-4" ] ); then
+./uInstall -t CFG -e $ENODE0 -i 0 -m TX -M TDMA -s 0 -d TDMA_bpsk/demo2 -b tx2 -l txlog2 --ns 10000 --rt 1e6 --sd B:0 --fq 0.9E9 --tg 50 --rg 40 --bw 100E6
+./uInstall -t CFG -e $ENODE1 -i 1 -m RX -M TDMA -s 1 -d TDMA_bpsk/demo2 -b rx2 -l rxlog2 --ns 10000 --rt 1e6 --sd B:0 --fq 0.9E9 --tg 40 --rg 40 --bw 100E6
+./uInstall -t INST -c $CNODE
+fi
+
+echo
+echo "=========================================================="
+echo "Install USER $TEST_SUIT to cnode $CNODE"
+echo "=========================================================="
+echo

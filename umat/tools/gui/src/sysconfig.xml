@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SysConfig>
+    <NodeProperty>
+        <NodeID>0</NodeID>
+        <IPAddr>192.168.1.100</IPAddr>
+        <NodeID>1</NodeID>
+        <IPAddr>192.168.1.101</IPAddr>
+        <NodeID>2</NodeID>
+        <IPAddr></IPAddr>
+    </NodeProperty>
+</SysConfig>

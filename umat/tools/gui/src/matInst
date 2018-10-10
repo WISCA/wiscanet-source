@@ -1,0 +1,3 @@
+#!/bin/bash
+./uInstall -t CFG -e 10.206.201.116 -i 1 -m RX -M UMAC -s 2 -d 3 -b 4 -l 5
+./uInstall -t INST -c 10.206.201.85

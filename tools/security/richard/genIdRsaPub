@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ ! -d ./.ssh ]; then 
+    echo "id_rsa does not exist"
+    ssh-keygen -t rsa
+else
+    cd ./.ssh
+    if [ ! -e id_rsa ]; then
+        echo "id_rsa does not exist"
+        ssh-keygen -t rsa
+    fi
+    cd ..
+fi
