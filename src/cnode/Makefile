@@ -25,4 +25,5 @@ clean:
 
 install:
 	mkdir -p ../build/cnode/bin/
+	mkdir -p ../build/cnode/log/
 	cp $(OUT) ../build/cnode/bin/
