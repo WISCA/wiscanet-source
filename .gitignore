@@ -100,3 +100,7 @@ umat/tools/gui/bin/gui_srv
 
 # Don't track install logs
 install_log
+
+# Ignore vim swaps
+*.swp
+*.swo
