@@ -89,3 +89,4 @@ verStr.h
 # Don't track compiled binaries
 src/enode/src/enode
 src/cnode/src/cnode
+src/build
