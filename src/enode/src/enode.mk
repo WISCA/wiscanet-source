@@ -6,7 +6,7 @@
 ENODE_PARSER = cnfParse.cpp
 
 OUT=enode
-OPT=-std=c++0x -DSUDO_MODE
+OPT=-std=c++17 -Wall -DSUDO_MODE
 INC=-I../../hdr/
 LIB=-lpthread -ltinyxml
 

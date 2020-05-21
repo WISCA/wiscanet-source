@@ -6,7 +6,7 @@
 ENODE_PARSER = ../enode/src/cnfParse.cpp
 
 OUT=cnode
-OPT=-std=c++0x
+OPT=-std=c++17 -Wall
 INC=-I../hdr/ -I../enode/src/
 #-I$(TXML_INC)
 LIB=-lpthread -lssl -lcrypto -ltinyxml
