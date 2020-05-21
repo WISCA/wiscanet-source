@@ -22,7 +22,7 @@ int sockfd;
 int myId;
 pid_t matPid, uCtrlPid;
 char serverIp[64];
-int serverPort; 
+int serverPort;
 cfgData_t cfg;
 
 void sig_chld_handler(int sig_no) {
@@ -31,7 +31,7 @@ void sig_chld_handler(int sig_no) {
     pidx = waitpid(-1, &status, WNOHANG);
 }
 
-void txMsgEnodeReg() 
+void txMsgEnodeReg()
 {
     ctrlMsg_t msg;
     cMsgEnodeReg_t *pload;
@@ -46,13 +46,13 @@ void txMsgEnodeReg()
     msg.hdr.type = MSG_ENODE_REG;
     pload = (cMsgEnodeReg_t *)msg.pload;
     strcpy(pload->ipaddr, inet_ntoa(localAddr.sin_addr));
-    
+
     // send message
     cout << "<-- msgEnodeReg" << endl;
     write(sockfd, &msg, MSG_LEN(cMsgEnodeReg_t));
 }
 
-void openSocket() 
+void openSocket()
 {
     int r;
     struct sockaddr_in serv_addr;
@@ -62,7 +62,7 @@ void openSocket()
     {
         cout << "socket() error\n";
         exit(1);
-    } 
+    }
 
     memset(&serv_addr, '0', sizeof(serv_addr));
 
@@ -78,7 +78,7 @@ void openSocket()
     }
 }
 
-void rxMsgEnodeRegAck(cMsgEnodeRegAck_t *pload) 
+void rxMsgEnodeRegAck(cMsgEnodeRegAck_t *pload)
 {
     // update node id
     myId = pload->enodeId;
@@ -94,7 +94,7 @@ void txMsgEnodeRunAck()
     msg.hdr.type = MSG_ENODE_RUN_ACK;
     pload = (cMsgEnodeRunAck_t *)msg.pload;
     pload->enodeId = myId;
-    
+
     // send message
     cout << "<-- msgEnodeRunAck" << endl;
     write(sockfd, &msg, MSG_LEN(cMsgEnodeRunAck_t));
@@ -109,15 +109,15 @@ void txMsgEnodeDlAck(int ret)
     msg.hdr.type = MSG_ENODE_DL_ACK;
     pload = (cMsgEnodeDlAck_t *)msg.pload;
     pload->ret = ret;
-    
+
     // send message
     cout << "<-- msgEnodeDlAck" << endl;
     write(sockfd, &msg, MSG_LEN(cMsgEnodeDlAck_t));
 }
 
-int rxMsgEnodeDlInd(cMsgEnodeDlInd_t *pload) 
+int rxMsgEnodeDlInd(cMsgEnodeDlInd_t *pload)
 {
-    char cnfFName[128] = "../mat/usrconfig.xml"; 
+    char cnfFName[128] = "../mat/usrconfig.xml";
     char cmdBuf[256];
     int  ret = -1;
 
@@ -133,13 +133,13 @@ int rxMsgEnodeDlInd(cMsgEnodeDlInd_t *pload)
             ret = 0;
         }
     }
-    
+
     txMsgEnodeDlAck(ret);
 
     return ret;
 }
 
-void txMsgEnodeRunCmpInd() 
+void txMsgEnodeRunCmpInd()
 {
     ctrlMsg_t msg;
     cMsgEnodeRunCmpInd_t *pload;
@@ -148,7 +148,7 @@ void txMsgEnodeRunCmpInd()
     msg.hdr.type = MSG_ENODE_RUN_CMP_IND;
     pload = (cMsgEnodeRunCmpInd_t *)msg.pload;
     pload->enodeId = myId;
-    
+
     // send message
     cout << "<-- msgEnodeRunCmpInd" << endl;
     write(sockfd, &msg, MSG_LEN(cMsgEnodeRunCmpInd_t));
@@ -171,9 +171,9 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload)
     uCtrlPid = fork();
     if(uCtrlPid == 0) { // child
 #ifdef SUDO_MODE
-        sprintf(cbuf, "sudo ./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", 
-                       (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", 
-                        cfg.macMode, 
+        sprintf(cbuf, "sudo ./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+                       (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX",
+                        cfg.macMode,
                         cfg.tSlot,
                         cfg.nsamps,
                         cfg.rate,
@@ -183,9 +183,9 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload)
                         cfg.rxgain,
                         cfg.bw);
 #else
-        sprintf(cbuf, "./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", 
-                       (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", 
-                        cfg.macMode, 
+        sprintf(cbuf, "./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+                       (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX",
+                        cfg.macMode,
                         cfg.tSlot,
                         cfg.nsamps,
                         cfg.rate,
@@ -229,7 +229,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload)
         if(strcmp(cfg.macMode, "UMAC") == 0) {
             sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; matlab -nodisplay -r %s\\(%d\\) < /dev/null | tee %s", cfg.matDir, cfg.mTopFile, start_time, logFn);
         }
-        else {                                        
+        else {
             sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; matlab -nodisplay -r %s < /dev/null | tee %s", cfg.matDir, cfg.mTopFile, logFn);
         }
         printf("%s\n", cbuf);
@@ -283,7 +283,7 @@ void txMsgEnodeLogAck()
     msg.hdr.type = MSG_ENODE_LOG_ACK;
     pload = (cMsgEnodeLogAck_t *)msg.pload;
     pload->enodeId = myId;
-    
+
     // send message
     cout << "<-- msgEnodeLogAck" << endl;
     write(sockfd, &msg, MSG_LEN(cMsgEnodeLogAck_t));
@@ -293,7 +293,7 @@ void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload)
 {
     char cbuf[1024];
 
-    // build, copy, and remove log file 
+    // build, copy, and remove log file
     sprintf(cbuf, "cd ../log; rm -rf *; cp ../mat/%s/*.mat .; rm -f ../mat/%s/*.mat; tar cfz wisca_log.tgz *", cfg.matDir, cfg.matDir);
     system(cbuf);
 
@@ -347,12 +347,12 @@ void mainLoop()
             case MSG_ENODE_LOG :
                 cout << "--> msgEnodeLogReq" << endl;
                 rxMsgEnodeLogReq((cMsgEnodeLogReq_t *)ctrlMsg->pload);
-                break; 
+                break;
             case MSG_ENODE_TERM :
                 cout << "--> msgEnodeTermReq" << endl;
                 rxMsgEnodeTermReq((cMsgEnodeTermReq_t *)ctrlMsg->pload, monPid);
                 exit(1);
-                break; 
+                break;
             default:
                 cout << "--> Undefined msg" << endl;
                 break;
@@ -363,7 +363,7 @@ void mainLoop()
 int main() {
 
     int size;
-    char cnfFName[64] = "sysconfig.xml"; 
+    char cnfFName[64] = "sysconfig.xml";
 
     cout << "\n\n";
     cout << "========================================================\n";
@@ -374,7 +374,7 @@ int main() {
     matPid = uCtrlPid = 0;
 
     // read configuration
-    sysCfgParse(cnfFName, serverIp, &serverPort); 
+    sysCfgParse(cnfFName, serverIp, &serverPort);
 
     openSocket();
     signal(SIGCHLD, &sig_chld_handler);
