@@ -1,9 +1,9 @@
 all:
-	cd cnode/src; make
+	cd cnode; make
 	cd enode; make
 
 clean:
-	cd cnode/src; make clean
+	cd cnode; make clean
 	cd enode; make clean
 	cd build/cnode/bin; rm -f *
 	cd build/cnode/log; rm -f *
@@ -12,5 +12,5 @@ clean:
 	cd build/enode/tools; rm -f *
 
 install:
-	cd cnode/src; make install
+	cd cnode; make install
 	cd enode; make install

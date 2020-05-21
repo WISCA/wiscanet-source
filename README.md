@@ -10,3 +10,4 @@
 - Boost v1.67 or greater
 - UHD preferably v3.15 or greater
 - OpenSSL or other `-lssl -lcrypto` options
+- TinyXML (including Development Headers)
