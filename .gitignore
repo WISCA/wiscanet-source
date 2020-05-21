@@ -93,6 +93,7 @@ src/cnode/src/verStr.h
 # Don't track compiled binaries
 src/enode/src/enode
 src/cnode/src/cnode
+src/cnode/bin
 src/build
 umat/tools/gui/bin/gui_srv
 
