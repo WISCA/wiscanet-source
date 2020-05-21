@@ -13,7 +13,9 @@ LIB=-lpthread -lssl -lcrypto -ltinyxml
 
 dateStr="char dateStr[128] = \"$(shell date)\";"
 
-$(OUT):
+all: cnode install
+
+cnode:
 	cp ../../verStr.h .
 	echo $(dateStr) >> ./verStr.h
 	g++ $(OPT) -o $(OUT) $(LIB) $(INC) main.cpp $(ENODE_PARSER)
