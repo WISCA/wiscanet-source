@@ -87,6 +87,9 @@ slprj/
 src/enode/src/verStr.h
 src/cnode/src/verStr.h
 
+# Don't track Settings folders
+.settings
+
 # Don't track compiled binaries
 src/enode/src/enode
 src/cnode/src/cnode
