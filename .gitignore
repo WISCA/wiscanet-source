@@ -92,7 +92,7 @@ src/cnode/verStr.h
 
 # Don't track compiled binaries
 src/enode/src/enode
-src/cnode/src/cnode
+src/cnode/cnode
 src/enode/src/uControl
 src/cnode/bin
 src/build
