@@ -84,7 +84,8 @@ _*
 slprj/
 
 # Don't track generated version string
-verStr.h
+src/enode/src/verStr.h
+src/cnode/src/verStr.h
 
 # Don't track compiled binaries
 src/enode/src/enode
