@@ -148,7 +148,6 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 	char cbuf[1024];
 	char logFn[1024];
 	long start_time;
-	extern char **environ;
 
 	// start_time
 	start_time = pload->start_time;
@@ -332,7 +331,6 @@ void mainLoop() {
 }
 
 int main() {
-	int size;
 	char cnfFName[64] = "sysconfig.xml";
 
 	cout << "\n\n";

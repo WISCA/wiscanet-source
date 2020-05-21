@@ -17,4 +17,5 @@ clean:
 	rm -rf ./$(OUT) ./a.out
 
 install:
+	mkdir -p ../../build/enode/bin
 	cp $(OUT) ../../build/enode/bin
