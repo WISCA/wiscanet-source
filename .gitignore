@@ -90,3 +90,4 @@ verStr.h
 src/enode/src/enode
 src/cnode/src/cnode
 src/build
+umat/tools/gui/bin/gui_srv

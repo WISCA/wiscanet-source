@@ -1,1 +1,1 @@
-/home/wisca/wdemo/dev/src/hdr/msgdef.h
+../../../../src/hdr/msgdef.h
