@@ -58,7 +58,7 @@ while(1)
 
     %========== Log generation
     if(saveFlag == 0) 
-        save('upTxdata');
+        save('upTxdata.mat');
         saveFlag = 1;
     end
 end

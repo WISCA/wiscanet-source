@@ -46,7 +46,7 @@ for i = 1:cycle_number
 end
 cRxDat = complex(rxdat(1:2:end), rxdat(2:2:end));
 fprintf('-- Dump log: cRxDat\n');
-save('cRxDat');
+save('cRxDat.mat');
 
 local_usrp.terminate_usrp();
 

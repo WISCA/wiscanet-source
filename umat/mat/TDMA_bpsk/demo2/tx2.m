@@ -56,7 +56,7 @@ while(1)
 
     % tx log generation
     if(saveFlag == 0) 
-        save('upTxdata');
+        save('upTxdata.mat');
     end
     saveFlag = saveFlag + 1;
 

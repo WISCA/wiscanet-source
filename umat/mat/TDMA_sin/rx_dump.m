@@ -27,7 +27,7 @@ if 1
         rxlog = [rxlog rxdata];
     end
     fprintf('\n');
-    save('rxlog');
+    save('rxlog.mat');
 end
 
 % close system for USRP interface
