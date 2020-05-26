@@ -10,7 +10,7 @@ dateStr="char dateStr[128] = \"$(shell date)\";"
 all: cnode install
 
 cnode:
-	cp ../../verStr.h .
+	cp ../verStr.h .
 	echo $(dateStr) >> ./verStr.h
 	g++ $(OPT) -o $(OUT) $(LIB) $(INC) cnode.cpp $(ENODE_PARSER)
 
