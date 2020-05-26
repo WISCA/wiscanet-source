@@ -772,7 +772,7 @@ void getUserName(char *userName) {
 
 	system("rm -f username");
     */
-    /* This is a more C - and correct way to do this. */
+    /* This is a more idiomatic way and correct way to do this. */
     struct passwd *pass;
     pass = getpwuid(getuid());
     userName = pass->pw_name;

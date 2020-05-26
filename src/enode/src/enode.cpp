@@ -145,7 +145,7 @@ void txMsgEnodeRunCmpInd() {
 }
 
 void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
-	char cbuf[1024];
+	char cbuf[2048];
 	char logFn[1024];
 	long start_time;
 
@@ -188,7 +188,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 		//        cout << "wait for uControl startup\n\n";
 		while (1) {
 			sleep(1);
-			printf("%02d/13\n", count);
+			printf("%02ld/13\n", count);
 			if (count++ > 12) break;
 		}
 	}
@@ -201,9 +201,9 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 		cout << "=====================================================\n";
 		cout << " [enode] start of MATLAB\n";
 		cout << "=====================================================\n";
-		printf("start_time = %d, macmode = %s\n", start_time, cfg.macMode);
+		printf("start_time = %ld, macmode = %s\n", start_time, cfg.macMode);
 		if (strcmp(cfg.macMode, "UMAC") == 0) {
-			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; matlab -nodisplay -r %s\\(%d\\) < /dev/null | tee %s",
+			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; matlab -nodisplay -r %s\\(%ld\\) < /dev/null | tee %s",
 			        cfg.matDir, cfg.mTopFile, start_time, logFn);
 		} else {
 			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; matlab -nodisplay -r %s < /dev/null | tee %s", cfg.matDir,
@@ -237,7 +237,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 }
 
 void rxMsgEnodeStopReq(cMsgEnodeStopReq_t *pload) {
-	char cbuf[1024];
+	char cbuf[2048];
 
 	sprintf(cbuf, "ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
 	system(cbuf);
@@ -264,7 +264,7 @@ void txMsgEnodeLogAck() {
 }
 
 void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload) {
-	char cbuf[1024];
+	char cbuf[2048];
 
 	// build, copy, and remove log file
 	sprintf(cbuf, "cd ../log; rm -rf *; cp ../mat/%s/*.mat .; rm -f ../mat/%s/*.mat; tar cfz wisca_log.tgz *",
