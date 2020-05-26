@@ -1,13 +1,8 @@
-#TXML = ../../lib/tinyxml
-#TXML_INC = $(TXML)
-#TXML_SRC = $(TXML)/tinyxml.cpp $(TXML)/tinystr.cpp \
-           $(TXML)/tinyxmlerror.cpp $(TXML)/tinyxmlparser.cpp \
-
-ENODE_PARSER = cnfParse.cpp
+ENODE_PARSER = ../shared/cnfParse.cpp
 
 OUT=enode
 OPT=-std=c++17 -Wall -DSUDO_MODE
-INC=-I../../hdr/
+INC=-I../include/
 LIB=-lpthread -ltinyxml
 
 all:

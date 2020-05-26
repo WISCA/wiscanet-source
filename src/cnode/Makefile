@@ -1,14 +1,8 @@
-#TXML = ../../lib/tinyxml
-#TXML_INC = $(TXML)
-#TXML_SRC = $(TXML)/tinyxml.cpp $(TXML)/tinystr.cpp \
-           $(TXML)/tinyxmlerror.cpp $(TXML)/tinyxmlparser.cpp \
-
-ENODE_PARSER = ../enode/src/cnfParse.cpp
+ENODE_PARSER = ../shared/cnfParse.cpp
 
 OUT=cnode
 OPT=-std=c++17 -Wall
-INC=-I../hdr/ -I../enode/src/
-#-I$(TXML_INC)
+INC=-I../include/ -I../enode/src/
 LIB=-lpthread -lssl -lcrypto -ltinyxml
 
 dateStr="char dateStr[128] = \"$(shell date)\";"
@@ -18,7 +12,7 @@ all: cnode install
 cnode:
 	cp ../../verStr.h .
 	echo $(dateStr) >> ./verStr.h
-	g++ $(OPT) -o $(OUT) $(LIB) $(INC) main.cpp $(ENODE_PARSER)
+	g++ $(OPT) -o $(OUT) $(LIB) $(INC) cnode.cpp $(ENODE_PARSER)
 
 clean:
 	rm -rf ./$(OUT) ./a.out

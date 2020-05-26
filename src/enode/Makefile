@@ -1,12 +1,17 @@
-all:
-	cd src; make; cd ..
-	cd mat; make; cd ..
-	cd tools; make; cd ..
+dateStr="char dateStr[128] = \"$(shell date)\";"
+
+all: comp install
+comp:
+	cp ../../verStr.h .
+	echo $(dateStr) >> ./verStr.h
+	make -f enode.mk
+	make -f uControl.mk
 
 clean:
-	cd src; make clean; cd ..
+	make -f enode.mk clean
+	make -f uControl.mk clean
 
 install:
-	cd src; make install; cd ..
-	cd mat; make; cd ..
-	cd tools; make; cd ..
+	make -f enode.mk install
+	make -f uControl.mk install
+
