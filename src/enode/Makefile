@@ -1,9 +1,5 @@
-dateStr="char dateStr[128] = \"$(shell date)\";"
-
 all: comp install
 comp:
-	cp ../verStr.h .
-	echo $(dateStr) >> ./verStr.h
 	make -f enode.mk
 	make -f uControl.mk
 	cd mat && make

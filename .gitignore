@@ -84,8 +84,7 @@ _*
 slprj/
 
 # Don't track generated version string
-src/enode/verStr.h
-src/cnode/verStr.h
+src/include/verStr.h
 
 # Don't track Settings folders
 .settings

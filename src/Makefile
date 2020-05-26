@@ -1,4 +1,8 @@
+dateStr="char dateStr[128] = \"$(shell date)\";"
+
 all:
+	echo "char verStr[128] = "V.0.7.1"" > include/verStr.h
+	echo $(dateStr) >> include/verStr.h
 	cd cnode; make
 	cd enode; make
 
