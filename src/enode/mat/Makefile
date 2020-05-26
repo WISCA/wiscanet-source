@@ -18,9 +18,11 @@ endif
 install:
 	mkdir -p ../../build/enode/mat/lib/
 	cp *.m      ../../build/enode/mat/lib
+ifdef MEX_OCT
 	cp *.mexa64 ../../build/enode/mat/lib
+else
 	cp *.mex ../../build/enode/mat/lib
+endif
 
 clean:
-	rm *.mexa64
-	rm *.mex
+	rm *.mex*
