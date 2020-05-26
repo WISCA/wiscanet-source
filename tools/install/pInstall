@@ -65,14 +65,10 @@ function usrSetup {
     (ssh $USER_ID@$1 'mkdir -p wdemo/usr/cfg');
     (ssh $USER_ID@$1 'mkdir -p wdemo/usr/tools');
     (ssh $USER_ID@$1 'mkdir -p wdemo/usr/tools/cli');
-    (ssh $USER_ID@$1 'mkdir -p wdemo/usr/tools/gui');
-    (ssh $USER_ID@$1 'mkdir -p wdemo/usr/tools/gui/web_root');
     (cd $HOME/dev/umat/; tar cfz $HOME/dev/src/usr.tgz mat)
     (cd $HOME/dev/src; scp usr.tgz $USER_ID@$1:wdemo/usr; ssh $USER_ID@$1 'cd wdemo/usr; tar xfz usr.tgz; rm -f usr.tgz')
     (rm -f $HOME/dev/src/usr.tgz)
     (scp $HOME/dev/umat/tools/cli/* $USER_ID@$1:wdemo/usr/tools/cli)
-    (scp $HOME/dev/umat/tools/gui/bin/gui* $USER_ID@$1:wdemo/usr/tools/gui)
-    (scp $HOME/dev/umat/tools/gui/src/web_root/* $USER_ID@$1:wdemo/usr/tools/gui/web_root)
 }
 
 function usage {
