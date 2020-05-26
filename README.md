@@ -1,5 +1,15 @@
 # WISCANet
 
+### Directory Structure
+
+- src - Source code and Makefiles
+- tools
+  - grc - Provides GNURadio flowgraphs for monitoring
+  - install - Provides scripts to install the system on nodes
+  - security - Provides scripts for configuration SSH between nodes
+- umat - User MATLAB code - This provides demos for the system
+
+
 ## Building WISCANet
 
 - create `src/build` directory tree as needed

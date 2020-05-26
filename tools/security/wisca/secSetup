@@ -7,36 +7,39 @@ rm -f ./tIdRsa
 ENABLE="ON"
 if [ "$ENABLE" == "ON" ]; then
 
+
+#TODO: This whole thing should be rewritten to use ssh-copy-id
+
     echo "================================="
     echo "== get id_rsa.pub files"
     echo "================================="
     for i in ${ENODE[@]}; do
         echo "$i"
-        scp ./genIdRsaPub $USER_NAME@$i:
-        ssh $USER_NAME@$i './genIdRsaPub; rm ./genIdRsaPub'
+        scp ./genSSHKey $USER_NAME@$i:
+        ssh $USER_NAME@$i './genSSHKey; rm ./genSSHKey'
         scp $USER_NAME@$i:.ssh/id_rsa.pub ./data
         cat ./data >> ./tIdRsa
         rm ./data
-        echo 
+        echo
     done
     i=$MNODE
     echo "$i"
-    scp ./genIdRsaPub $MASTER_NAME@$i:
-    ssh $MASTER_NAME@$i './genIdRsaPub; rm ./genIdRsaPub'
+    scp ./genSSHKey $MASTER_NAME@$i:
+    ssh $MASTER_NAME@$i './genSSHKey; rm ./genSSHKey'
     scp $MASTER_NAME@$i:.ssh/id_rsa.pub ./data
     cat ./data >> ./tIdRsa
     rm ./data
-    echo 
-    
+    echo
+
     echo "================================="
     echo "== create authorized_keys"
     echo "================================="
     for i in ${ENODE[@]}; do
         scp tIdRsa $USER_NAME@$i:.ssh/authorized_keys
         ssh $USER_NAME@$i 'chmod 700 .ssh; chmod 640 .ssh/authorized_keys'
-        echo 
+        echo
     done
-    
+
     echo "================================="
     echo "== validate login procedure"
     echo "================================="
@@ -46,7 +49,7 @@ if [ "$ENABLE" == "ON" ]; then
         scp ./config $USER_NAME@$i:
         ssh $USER_NAME@$i 'source ./sshTest; rm -f ./sshTest ./config'
     done
-    
+
     i=$MNODE
     echo "$i to other nodes"
     scp ./sshTest $MASTER_NAME@$i:

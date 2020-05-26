@@ -2,9 +2,8 @@
 
 . ./config
 
+#TODO: There should be no need for StrictHostKeyChecking to be turned off
 for j in ${ENODE[@]}; do
     echo "== to $j"
     ssh -o StrictHostKeyChecking=no $USER_NAME@$j 'hostname; exit'
 done
-
-
