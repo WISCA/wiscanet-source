@@ -8,5 +8,5 @@ clean:
 	rm -f uControl
 
 install:
-	mkdir -p ../../build/enode/bin
-	cp uControl ../../build/enode/bin
+	mkdir -p ../build/enode/bin
+	cp uControl ../build/enode/bin

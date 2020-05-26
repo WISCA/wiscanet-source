@@ -6,12 +6,17 @@ comp:
 	echo $(dateStr) >> ./verStr.h
 	make -f enode.mk
 	make -f uControl.mk
+	cd mat && make
+	cd tools && make
 
 clean:
 	make -f enode.mk clean
 	make -f uControl.mk clean
+	cd mat && make clean
+	cd tools && make clean
 
 install:
 	make -f enode.mk install
 	make -f uControl.mk install
-
+	cd mat && make install
+	cd tools && make install

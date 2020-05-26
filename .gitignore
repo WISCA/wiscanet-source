@@ -91,9 +91,9 @@ src/cnode/verStr.h
 .settings
 
 # Don't track compiled binaries
-src/enode/src/enode
+src/enode/enode
 src/cnode/cnode
-src/enode/src/uControl
+src/enode/uControl
 src/cnode/bin
 src/build
 umat/tools/gui/bin/gui_srv
