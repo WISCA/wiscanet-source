@@ -1,3 +1,0 @@
-#!/bin/bash
-ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9
-ps -A | grep octave | awk '{print $1}' | xargs kill -9

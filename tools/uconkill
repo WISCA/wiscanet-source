@@ -1,2 +1,0 @@
-#!/bin/bash
-ps -A | grep uControl | awk '{print $1}' | xargs kill -9
