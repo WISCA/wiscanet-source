@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <pwd.h>
 
 #include <csignal>
 #include <iostream>
@@ -759,7 +760,8 @@ void uiServerStart(string msg) {
 }
 
 void getUserName(char *userName) {
-	FILE *fp;
+	/* OLD CODE:
+     * FILE *fp;
 
 	system("whoami > username");
 
@@ -769,6 +771,11 @@ void getUserName(char *userName) {
 	fclose(fp);
 
 	system("rm -f username");
+    */
+    /* This is a more C - and correct way to do this. */
+    struct passwd *pass;
+    pass = getpwuid(getuid());
+    userName = pass->pw_name;
 }
 
 int main() {
