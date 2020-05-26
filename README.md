@@ -9,11 +9,15 @@
   - security - Provides scripts for configuration SSH between nodes
 - umat - User MATLAB code - This provides demos for the system
 
-
 ## Building WISCANet
 
 - create `src/build` directory tree as needed
 - run `make` in src
+
+## Build Results (aka What to do Next)
+
+- In src/build there will be the executables to run a cnode or enode
+- When combined with wiscanet-deploy, this will allow you to set up a network
 
 ## Requirements
 
