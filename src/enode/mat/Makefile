@@ -20,3 +20,7 @@ install:
 	cp *.m      ../../build/enode/mat/lib
 	cp *.mexa64 ../../build/enode/mat/lib
 	cp *.mex ../../build/enode/mat/lib
+
+clean:
+	rm *.mexa64
+	rm *.mex
