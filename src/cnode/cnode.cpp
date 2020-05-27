@@ -340,7 +340,7 @@ int enodeRunReq() {
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp(sysConf[cIdx].macMode, "UMAC") == 0) {
-				printf("node start time = %d, %s\n", start_time, res);
+				printf("node start time = %ld, %s\n", start_time, res);
 				pload->start_time = (double)start_time;
 			} else {
 				pload->start_time = (double)0;
@@ -775,7 +775,7 @@ void getUserName(char *userName) {
     /* This is a more idiomatic way and correct way to do this. */
     struct passwd *pass;
     pass = getpwuid(getuid());
-    userName = pass->pw_name;
+    strcpy(userName,pass->pw_name);
 }
 
 int main() {
