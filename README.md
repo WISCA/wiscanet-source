@@ -13,6 +13,7 @@
 
 - create `src/build` directory tree as needed
 - run `make` in src
+- CMake conversion is a work in progress, don't use :)
 
 ## Build Results (aka What to do Next)
 
