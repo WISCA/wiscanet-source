@@ -760,8 +760,7 @@ void uiServerStart(string msg) {
 }
 
 void getUserName(char *userName) {
-	/* OLD CODE:
-     * FILE *fp;
+    FILE *fp;
 
 	system("whoami > username");
 
@@ -771,11 +770,6 @@ void getUserName(char *userName) {
 	fclose(fp);
 
 	system("rm -f username");
-    */
-    /* This is a more idiomatic way and correct way to do this. */
-    struct passwd *pass;
-    pass = getpwuid(getuid());
-    strcpy(userName,pass->pw_name);
 }
 
 int main() {
