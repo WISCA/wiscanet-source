@@ -188,8 +188,8 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 		//        cout << "wait for uControl startup\n\n";
 		while (1) {
 			sleep(1);
-			printf("%02ld/13\n", count);
-			if (count++ > 12) break;
+			printf("%02ld/20\n", count);
+			if (count++ > 19) break;
 		}
 	}
 	getcwd(logFn, sizeof(logFn));
