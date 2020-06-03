@@ -780,7 +780,7 @@ int main() {
 	cout << "=================================================\n";
 	cout << "=                  WISCA SDR-N                  =\n";
 	cout << "=================================================\n";
-	cout << "      " << verStr << ", " << dateStr << endl;
+	cout << "      " << verStr << endl;
 	cout << endl;
 
 	controllerInit();

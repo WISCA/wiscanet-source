@@ -337,7 +337,7 @@ int main() {
 	cout << "========================================================\n";
 	cout << "=  Enode control software\n";
 	cout << "========================================================\n";
-	cout << verStr << ", " << dateStr << endl;
+	cout << verStr << endl;
 
 	matPid = uCtrlPid = 0;
 
