@@ -103,3 +103,7 @@ install_log
 # Ignore vim swaps
 *.swp
 *.swo
+
+# Ignore doxygen generated files
+doc/html
+doc/latex

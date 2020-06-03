@@ -12,8 +12,8 @@
 ## Building WISCANet
 
 - create `src/build` directory tree as needed
-- run `make` in src
-- CMake conversion is a work in progress, don't use :)
+- run `cmake ../` from inside `src/build`
+- run `make` from inside `src/build`
 
 ## Build Results (aka What to do Next)
 
