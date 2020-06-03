@@ -24,12 +24,6 @@ char serverIp[64];
 int serverPort;
 cfgData_t cfg;
 
-void sig_chld_handler(int sig_no) {
-	int status;
-	pid_t pidx;
-	pidx = waitpid(-1, &status, WNOHANG);
-}
-
 void txMsgEnodeReg() {
 	ctrlMsg_t msg;
 	cMsgEnodeReg_t *pload;
@@ -276,8 +270,6 @@ void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload) {
 }
 
 void rxMsgEnodeTermReq(cMsgEnodeTermReq_t *pload) {
-	char cbuf[256];
-
 	system("ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
 #ifdef SUDO_MODE
 	system("ps -A | grep uControl | awk '{print $1}' | sudo xargs kill -9 > /dev/null");
@@ -344,7 +336,7 @@ int main() {
 	sysCfgParse(cnfFName, serverIp, &serverPort);
 
 	openSocket();
-	signal(SIGCHLD, &sig_chld_handler);
+    signal(SIGCHLD, SIG_IGN);
 
 	txMsgEnodeReg();
 	mainLoop();
