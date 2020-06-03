@@ -760,16 +760,9 @@ void uiServerStart(string msg) {
 }
 
 void getUserName(char *userName) {
-	FILE *fp;
-
-	system("whoami > username");
-
-	fp = fopen("username", "r");
-	fgets(userName, 128, fp);
-	userName[strlen(userName) - 1] = '\0';
-	fclose(fp);
-
-	system("rm -f username");
+    struct passwd *pass;
+    pass = getpwuid(getuid());
+    strcpy(userName,pass->pw_name);
 }
 
 int main() {
