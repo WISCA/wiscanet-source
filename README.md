@@ -20,6 +20,12 @@
 - In src/build there will be the executables to run a cnode or enode
 - When combined with wiscanet-deploy, this will allow you to set up a network
 
+## Documentation
+
+- To generate documentation run `doxygen doc/Doxyfile`
+- HTML browsable documentation is then found at `doc/html/`, the root being [doc/html/index.html](doc/html/index.html)
+- PDF documentation from LaTeX is then found at `doc/latex/`
+
 ## Requirements
 
 - Boost v1.67 or greater
