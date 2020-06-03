@@ -681,8 +681,8 @@ void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	uhd::set_thread_priority_safe();
 
-	std::cerr << verStr << std::endl;
-	std::cout << verStr << std::endl;
+	std::cerr << "uControl Version: " << verStr << std::endl;
+	std::cout << "uControl Version: " << verStr << std::endl;
 
 	// variables to be set by po
 	std::string args, file, type, ant, subdev, ref, wirefmt;
