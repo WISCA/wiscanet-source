@@ -132,11 +132,8 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		// printNodeInfo();
 
 		// create log directories
-		sprintf(command, "test -d ../log/enode_%d", nodeId);
-		if (system(command)) {
-			sprintf(command, "mkdir ../log/enode_%d", nodeId);
-			system(command);
-		}
+	    sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
+    	system(command);
 	} else {
 		sysConf[nodeId].sockFd = sock;
 	}
@@ -195,7 +192,7 @@ void rxMsgEnodeLogAck(int sock, cMsgEnodeLogAck_t *pload, int size) {
 	// backup data log
 	if (logEnodeAckCount == logEnodeCount) {
 		strftime(tbuf, 128, "%Y_%m_%d_%H_%M_%S", localtime(&now));
-		sprintf(cbuf, "mkdir ../log_history/log_%s; cp -R ../log/* ../log_history/log_%s", tbuf, tbuf);
+		sprintf(cbuf, "mkdir -p ../log_history/log_%s; cp -R ../log/* ../log_history/log_%s", tbuf, tbuf);
 		system(cbuf);
 	}
 }
