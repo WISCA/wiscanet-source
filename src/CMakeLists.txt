@@ -7,7 +7,11 @@ file(WRITE include/verStr.h
     )
 
 # Configure Global Compile Options
-add_compile_options(-Wall -std=c++17 -Werror=format-security)
+add_compile_options(-Wall -Werror=format-security)
+
+# Configure CPP Standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add shared static libraries
 add_library(cnfParse STATIC shared/cnfParse.cpp)

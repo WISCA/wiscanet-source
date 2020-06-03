@@ -1,12 +1,12 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <pwd.h>
 
 #include <csignal>
 #include <iostream>
@@ -760,7 +760,7 @@ void uiServerStart(string msg) {
 }
 
 void getUserName(char *userName) {
-    FILE *fp;
+	FILE *fp;
 
 	system("whoami > username");
 
@@ -780,8 +780,8 @@ int main() {
 	cout << "=================================================\n";
 	cout << "=                  WISCA SDR-N                  =\n";
 	cout << "=================================================\n";
-	cout << "=                  VERSION: " <<  verStr << "               =\n";
-    cout << "=================================================\n";
+	cout << "=                  VERSION: " << verStr << "               =\n";
+	cout << "=================================================\n";
 	cout << endl;
 
 	controllerInit();

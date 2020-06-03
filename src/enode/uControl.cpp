@@ -99,9 +99,9 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	int rxUnit;
 
 	rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-    if(rResult < 0) {
-        printf("Error: failed to receive command\n");
-    }
+	if (rResult < 0) {
+		printf("Error: failed to receive command\n");
+	}
 	rxTime = uhd::time_spec_t(*stime);
 	time_now = usrp->get_time_now(0);
 	realRxTime = rxTime.get_real_secs();
@@ -269,9 +269,9 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	char cmdBuf[1024];
 	printf("wait RX start command\n");
 	rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-    if(rResult < 0) {
-        printf("Error: failed to receive command\n");
-    }
+	if (rResult < 0) {
+		printf("Error: failed to receive command\n");
+	}
 	printf("recv RX start command\n");
 
 	// create a receive streamer
@@ -855,7 +855,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		} else if (macmode == "UMAC") {
 			transmit_thread.create_thread(boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot));
 		} else {
-            std::cout << "Unknown macmode: " << macmode << std::endl;
+			std::cout << "Unknown macmode: " << macmode << std::endl;
 			exit(1);
 		}
 	}
@@ -882,7 +882,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 			else
 				throw std::runtime_error("Unknown type " + type);
 		} else {
-            std::cout << "Unknown macmode: " << macmode << std::endl;
+			std::cout << "Unknown macmode: " << macmode << std::endl;
 			exit(1);
 		}
 	} else {
