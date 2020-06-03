@@ -753,7 +753,6 @@ int main() {
 	getUserName(userName);
 
 	system("clear");
-	cout << endl;
 	cout << "=================================================\n";
 	cout << "=                  WISCA SDR-N                  =\n";
 	cout << "=================================================\n";

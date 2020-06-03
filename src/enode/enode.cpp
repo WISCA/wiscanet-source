@@ -275,11 +275,9 @@ void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload) {
 	txMsgEnodeLogAck();
 }
 
-void rxMsgEnodeTermReq(cMsgEnodeTermReq_t *pload, pid_t pid) {
+void rxMsgEnodeTermReq(cMsgEnodeTermReq_t *pload) {
 	char cbuf[256];
 
-	sprintf(cbuf, "kill -9 %d > /dev/null", pid);
-	system(cbuf);
 	system("ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
 #ifdef SUDO_MODE
 	system("ps -A | grep uControl | awk '{print $1}' | sudo xargs kill -9 > /dev/null");
@@ -292,7 +290,6 @@ void mainLoop() {
 	char rxbuf[1024];
 	int size;
 	ctrlMsg_t *ctrlMsg;
-	pid_t monPid;
 
 	ctrlMsg = (ctrlMsg_t *)rxbuf;
 	while (1) {
@@ -320,7 +317,7 @@ void mainLoop() {
 				break;
 			case MSG_ENODE_TERM:
 				cout << "--> msgEnodeTermReq" << endl;
-				rxMsgEnodeTermReq((cMsgEnodeTermReq_t *)ctrlMsg->pload, monPid);
+				rxMsgEnodeTermReq((cMsgEnodeTermReq_t *)ctrlMsg->pload);
 				exit(1);
 				break;
 			default:
