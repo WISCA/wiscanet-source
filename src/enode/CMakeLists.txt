@@ -14,3 +14,6 @@ set(UCONTROL_LIBS "pthread" "boost_program_options" "uhd" "boost_thread" "boost_
 
 add_executable(uControl ${UCONTROL_SOURCE_FILES})
 target_link_libraries(uControl ${UCONTROL_LIBS})
+
+# Build matlab sudirectory
+add_subdirectory(mat)
