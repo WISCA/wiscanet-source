@@ -65,7 +65,6 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	// udp socket
 	struct sockaddr_in si_other, si_me;
 	int sockfd, slen;
-	int rLen;
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) exit(1);
 	memset((char *)&si_other, 0, sizeof(si_other));
 	si_other.sin_family = AF_INET;
@@ -94,12 +93,15 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	int rResult;
 	char cmdBuf[1024];
 	double *stime = (double *)cmdBuf;
-	double realRxTime, realNowTime, timeDiff;
+	double realRxTime, realNowTime;
 	double timeout;
 	int rxLoc;
 	int rxUnit;
 
 	rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+    if(rResult < 0) {
+        printf("Error: failed to receive command\n");
+    }
 	rxTime = uhd::time_spec_t(*stime);
 	time_now = usrp->get_time_now(0);
 	realRxTime = rxTime.get_real_secs();
@@ -173,7 +175,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 			num_total_samps += num_rx_samps;
 		}
 
-		printf("-- num_total_samps = %d\n", num_total_samps);
+		printf("-- num_total_samps = %lld\n", num_total_samps);
 
 		/*
 		{
@@ -225,7 +227,7 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
                       const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
                       double time_requested = 0.0, bool bw_summary = false, bool stats = false, bool null = false,
                       bool enable_size_map = false, bool continue_on_bad_packet = false, size_t tslot = 0) {
-	printf("================== RX TDMA worker (tslot:%d) =================\n", tslot);
+	printf("================== RX TDMA worker (tslot:%zu) =================\n", tslot);
 
 	// time variables for scheduling
 	uhd::time_spec_t last_pps, time_now, rxTime;
@@ -236,7 +238,6 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	// udp data socket
 	struct sockaddr_in si_other, si_me;
 	int sockfd, slen;
-	int rLen;
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) exit(1);
 	memset((char *)&si_other, 0, sizeof(si_other));
 	si_other.sin_family = AF_INET;
@@ -268,6 +269,9 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	char cmdBuf[1024];
 	printf("wait RX start command\n");
 	rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+    if(rResult < 0) {
+        printf("Error: failed to receive command\n");
+    }
 	printf("recv RX start command\n");
 
 	// create a receive streamer
@@ -366,7 +370,7 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 
 			// send zero size termination packet
 			sendto(sockfd, &buff.front(), 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
-			printf("rx : slot=%d, time=%f, len=%d(smpls)\n", cslot, rxTime.get_real_secs(), txTotal);
+			printf("rx : slot=%zu, time=%f, len=%d(smpls)\n", cslot, rxTime.get_real_secs(), txTotal);
 		}
 
 		cslot = (cslot + 1) % MAX_SLOT;
@@ -487,7 +491,6 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 
 	// variables for timer
 	uhd::time_spec_t txTime, time_now, prev_txtime;
-	double tMargin = 0.001;  // 1msec
 
 	prev_txtime = uhd::time_spec_t(0.0);
 
@@ -578,7 +581,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 }
 
 void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, size_t tslot) {
-	printf("================== TX TDMA worker (slot:%d) =================\n", tslot);
+	printf("================== TX TDMA worker (slot:%zu) =================\n", tslot);
 
 	// variables for timer
 	uhd::time_spec_t last_pps, time_now, txTime;
@@ -852,7 +855,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		} else if (macmode == "UMAC") {
 			transmit_thread.create_thread(boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot));
 		} else {
-			printf("unknown macmode = %s\n", macmode);
+            std::cout << "Unknown macmode: " << macmode << std::endl;
 			exit(1);
 		}
 	}
@@ -879,7 +882,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 			else
 				throw std::runtime_error("Unknown type " + type);
 		} else {
-			printf("unknown macmode = %s\n", macmode);
+            std::cout << "Unknown macmode: " << macmode << std::endl;
 			exit(1);
 		}
 	} else {
