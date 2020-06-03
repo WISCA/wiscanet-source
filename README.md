@@ -23,7 +23,7 @@
 ## Requirements
 
 - Boost v1.67 or greater
-- UHD preferably v3.14 or greater (min tested currently)
+- UHD preferably v3.15 or greater (min tested currently)
 - OpenSSL or other `-lssl -lcrypto` options
 - TinyXML (including Development Headers)
 - Ports
