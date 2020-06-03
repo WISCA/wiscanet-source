@@ -290,9 +290,7 @@ int downloadMatFiles() {
 		system(cbuf);
 		sprintf(cbuf, "ssh %s@%s 'cd wdemo/run/enode; tar xfz umat.tgz; rm umat.tgz'", userName, sysConf[cIdx].ipaddr);
 		system(cbuf);
-		sprintf(cbuf, "cd ../../usr; rm -f umat.tgz");
-		system(cbuf);
-		printf("%s\n", cbuf);
+        remove("../../usr/umat.tgz");
 
 		dlEnodeCount++;
 	}
@@ -487,20 +485,6 @@ void remoteEnodeStart() {
 	}
 }
 
-int batchProcessing() {
-	/*
-	    FILE *fp;
-	    char cmdBuf[1024];
-
-	    fp = fopen("bCommand", "r");
-	    fgets(cmdBuf, 1024, fp);
-	    printf("batch command = %s\n", cmdBuf);
-	    system(cmdBuf);
-	    fclose(fp);
-	*/
-	return 0;
-}
-
 int dlNExecution() {
 	cout << "-- download and execution\n" << endl;
 
@@ -554,6 +538,9 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 		case CMD_LOG_ANAL:
 			logAnalysis();
 			break;
+        /*
+         * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
+         */
 		case (CMD_DL_MATLAB | CMD_EX_MATLAB):
 			dlNExecution();
 			break;
@@ -771,8 +758,6 @@ int main() {
 	cout << "=                  WISCA SDR-N                  =\n";
 	cout << "=================================================\n";
 	cout << "=                  VERSION: " << verStr << "               =\n";
-	cout << "=================================================\n";
-	cout << endl;
 
 	controllerInit();
 
