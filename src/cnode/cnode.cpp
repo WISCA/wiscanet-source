@@ -539,6 +539,7 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 			logAnalysis();
 			break;
         /*
+         * TODO: Is this case ever hit?
          * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
          */
 		case (CMD_DL_MATLAB | CMD_EX_MATLAB):
