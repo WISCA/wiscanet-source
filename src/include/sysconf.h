@@ -1,6 +1,9 @@
 #ifndef __SYS_CONF_H__
 #define __SYS_CONF_H__
 
+/*! \def MAX_ENODE
+ * \brief The maximum number of enodes that can connect to a cnode
+ */
 #define MAX_ENODE 64
 #define NODE_FREE 0
 #define NODE_USED 1

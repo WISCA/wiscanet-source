@@ -20,10 +20,24 @@
 
 using namespace std;
 
+/*! \def PORT
+ *  \brief The port number cnode listens on for edge node connections
+ */
 #define PORT 9000
+/*! \def BACKLOG
+ *  \brief The maximum number of queued pending connections for cnode's sockets
+ *
+ *  The maximum number of queued pending connections for cnode's sockets.  If it grows above this number, any connecting client may be rejected or have to retry
+ */
 #define BACKLOG 20
+/*! \def STIME_MARGIN
+ *  \brief The number of seconds given for all components to start up before the first MATLAB function may execute
+ *
+ * This margin is given from the time enodeRunReq kicked off.  It is baked in before it is sent to the enodes.  The enodes then use that time to command MATLAB to start the programs execution at that time.
+ */
+#define STIME_MARGIN 35
 
-char userName[128];
+char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the username enode is running as.  It is used to SSH to any enodes */
 struct nodeInfo *sysConf;
 vector<int> fdList;
 
@@ -308,8 +322,6 @@ int downloadMatFiles() {
 }
 
 int enodeRunReq() {
-#define STIME_MARGIN 35
-
 	ctrlMsg_t msg;
 	cMsgEnodeRunReq_t *pload;
 	struct timespec spec;
@@ -744,12 +756,27 @@ void uiServerStart(string msg) {
 	}
 }
 
+/**
+ * Gets the username that cnode is running as
+ *
+ * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for it.
+ * Typically it used to store the username in the global character array userName of length 128.
+ *
+ * @param userName The username is stored in this character array.
+ */
 void getUserName(char *userName) {
     struct passwd *pass;
     pass = getpwuid(getuid());
     strcpy(userName,pass->pw_name);
 }
 
+/**
+ * Main function, starts the cnode
+ *
+ * Prints the main banner, and then spins off the UI thread providing the text input
+ * This also starts the socket controller than handles accepting enode connections
+ * The UI thread commands the main thread (the controller) to send commands to and from enodes
+ */
 int main() {
 	getUserName(userName);
 
