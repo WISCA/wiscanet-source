@@ -118,7 +118,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	int portNum, cportNum;
 	short *sBuf;
 	int len;
-	const mwSize *dim_array;
+	const int *dim_array;
 	mwSize dims[1];
 	int n;
 	double start_time;
