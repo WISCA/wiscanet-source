@@ -50,13 +50,18 @@ int logEnodeAckCount;
 
 int ss;
 
-void system_close(int sid) {
+/**
+ * Called before any exit, cleanly shutdowns any open sockets.
+ *
+ * Cleanly shutdowns opened sockets.  Iterates through the fdList and shuts down each socket, this prevents waiting for the system to reap the sockets and allows the program to be properly restarted and recover from crashes
+ */
+void destroySockets() {
 	int fd;
 
 	while (fdList.size() != 0) {
 		fd = fdList.back();
 		fdList.pop_back();
-		cout << "close socket " << fd << endl;
+		cout << "Closing socket: " << fd << endl;
 		shutdown(fd, SHUT_RDWR);
 	}
 }
@@ -135,6 +140,7 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		nodeId = getFreeNodeInfo();
 		if (nodeId == -1) {
 			cout << "No more space for nodeInfo\n";
+            destroySockets();
 			exit(1);
 		}
 		sysConf[nodeId].state = 1;
@@ -412,7 +418,8 @@ void logAnalysis() {
 	fp = fopen("../log/logAnalysis.m", "w");
 	if (fp == NULL) {
 		printf("fail to open logAnalysis.m\n");
-		exit(1);
+		destroySockets();
+        exit(1);
 	}
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		if (sysConf[cIdx].usrFlag == 1) {
@@ -612,6 +619,7 @@ void controllerStart() {
 		read_fd_set = active_fd_set;
 		if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
 			cout << "select error\n";
+            destroySockets();
 			exit(1);
 		}
 		for (i = 0; i < FD_SETSIZE; ++i) {
@@ -650,6 +658,7 @@ void controllerInit() {
 	ss = socket(AF_INET, SOCK_STREAM, 0);
 	if (ss < 0) {
 		cout << "socket open error\n";
+        destroySockets();
 		exit(1);
 	}
 	fdList.push_back(ss);
@@ -657,12 +666,14 @@ void controllerInit() {
 	r = bind(ss, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	if (r < 0) {
 		cout << "bind error\n";
+        destroySockets();
 		exit(1);
 	}
 
 	r = listen(ss, BACKLOG);
 	if (r < 0) {
 		cout << "listen error\n";
+        destroySockets();
 		exit(1);
 	}
 }
@@ -748,6 +759,7 @@ void uiServerStart(string msg) {
 					cout << "=================================================\n";
 					cout << "           End of experiment system\n";
 					cout << "=================================================\n\n\n";
+                    destroySockets();
 					exit(0);
 				default:
 					break;
