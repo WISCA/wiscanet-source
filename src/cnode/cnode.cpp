@@ -63,6 +63,7 @@ void destroySockets() {
 		fdList.pop_back();
 		cout << "Closing socket: " << fd << endl;
 		shutdown(fd, SHUT_RDWR);
+        close(fd);
 	}
 }
 
