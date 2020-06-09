@@ -179,11 +179,11 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 	// idle loop
 	{
 		size_t count = 0;
-		//        cout << "wait for uControl startup\n\n";
+		cout << "Waiting for uControl startup (Radio initialization)" << endl;
 		while (1) {
 			sleep(1);
-			printf("%02ld/13\n", count);
-			if (count++ > 12) break;
+			printf("%02ld/15\n", count);
+			if (count++ > 14) break;
 		}
 	}
 	getcwd(logFn, sizeof(logFn));

@@ -5,10 +5,10 @@ methods (Static)
 function sys_init(cmd);
     if(cmd == 'txinit')
         fprintf('Conneting to local host, txport 9940\n');
-        gradio_mex(cmd, '127.0.0.1', 9940); 
+        gradio_mex(cmd, '127.0.0.1', 9940);
     elseif (cmd == 'rxinit')
         fprintf('Conneting to local host, rxport 9942, 9943\n');
-        gradio_mex(cmd, '127.0.0.1', 9942, 9943); 
+        gradio_mex(cmd, '127.0.0.1', 9942, 9943);
         gradio_mex('rcon', 0); % immediate start
     end
 end
@@ -56,7 +56,7 @@ function rxdata = usrp_read();
         if(len == 0) break; end;
         totalRx = totalRx + len;
     end
-    
+
     % ....
 %fprintf('\nrlen = %d complex samples\n', totalRx/2);
 %fprintf('R');
@@ -68,7 +68,7 @@ function rxdata = usrp_read();
         rxdata(idx) = complex(rxbuf(n), rxbuf(n+1));
         idx = idx+1;
     end
-    
+
 end
 
 end
