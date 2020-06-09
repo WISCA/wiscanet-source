@@ -17,6 +17,11 @@
 
 using namespace std;
 
+/*! \def RADIO_WAIT
+ *  \brief Number of seconds to wait before launching MATLAB.  This time is spent launching uControl and initializing the radio
+ */
+#define RADIO_WAIT 20
+
 int sockfd;
 int myId;
 pid_t matPid, uCtrlPid;
@@ -182,8 +187,8 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 		cout << "Waiting for uControl startup (Radio initialization)" << endl;
 		while (1) {
 			sleep(1);
-			printf("%02ld/15\n", count);
-			if (count++ > 14) break;
+			printf("%02ld/%d\n", count, RADIO_WAIT);
+			if (count++ > (RADIO_WAIT-1)) break;
 		}
 	}
 	getcwd(logFn, sizeof(logFn));
