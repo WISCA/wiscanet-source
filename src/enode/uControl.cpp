@@ -419,7 +419,7 @@ bool check_locked_sensor(std::vector<std::string> sensor_names, const char* sens
 
 	while (true) {
 		if ((not first_lock_time.is_not_a_date_time()) and
-				(boost::get_system_time() > (first_lock_time + boost::posix_time::seconds(setup_time))))
+				(boost::get_system_time() > (first_lock_time + boost::posix_time::seconds{static_cast<long>(setup_time)})))
 		{
 			std::cout << " locked." << std::endl;
 			break;
@@ -433,7 +433,7 @@ bool check_locked_sensor(std::vector<std::string> sensor_names, const char* sens
 		else {
 			first_lock_time = boost::system_time();	//reset to 'not a date time'
 
-			if (boost::get_system_time() > (start + boost::posix_time::seconds(setup_time))){
+			if (boost::get_system_time() > (start + boost::posix_time::seconds{static_cast<long>(setup_time)})){
 				std::cout << std::endl;
 				throw std::runtime_error(str(boost::format("timed out waiting for consecutive locks on sensor \"%s\"") % sensor_name));
 			}
@@ -1010,8 +1010,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
 
     uhd::set_thread_priority_safe();
 
-    std::cerr << verStr << ", " << dateStr << std::endl;
-    std::cout << verStr << ", " << dateStr << std::endl;
+	std::cerr << "uControl Version: " << verStr << std::endl;
+	std::cout << "uControl Version: " << verStr << std::endl;
 
     //variables to be set by po
     std::string args, file, type, ant, subdev, ref, wirefmt;
@@ -1143,7 +1143,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
         tx_usrp->set_tx_antenna(ant, chan);
     }
 
-    boost::this_thread::sleep(boost::posix_time::seconds(setup_time)); //allow for some setup time
+    boost::this_thread::sleep(boost::posix_time::seconds{static_cast<long>(setup_time)}); //allow for some setup time
 
     //check Ref and LO Lock detect
     if (not vm.count("skip-lo")){
