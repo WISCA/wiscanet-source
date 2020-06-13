@@ -24,7 +24,7 @@ classdef local_usrp
                 sample_rate, freq, rx_gain, tx_gain, bw, setup_time)
             fprintf('Connecting to local host, txport 9940\n');
             local_usrp_mex('txinit', '127.0.0.1', 9940);
-            fprintf('Connecting to local host, rxport 9942, 9943\n');
+            fprintf('Connecting to local host, rxport 9944, 9945\n');
             local_usrp_mex('rxinit', '127.0.0.1', 9944, 9945);
             this.request_num_samps = num_samps;
         end
