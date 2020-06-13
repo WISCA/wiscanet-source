@@ -225,7 +225,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 			return;
 		}
 		dim_array = mxGetDimensions(prhs[1]);
-		len = dim_array[1] * sizeof(float);
+		len = dim_array[2] * sizeof(float);
 		sBuf = (short *)mxGetData(prhs[1]);
 		start_time = mxGetScalar(prhs[2]);
 		mexPrintf("Write operation %f\n", start_time);
