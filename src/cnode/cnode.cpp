@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -7,7 +8,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include <csignal>
 #include <iostream>
@@ -28,17 +28,20 @@ using namespace std;
 /*! \def BACKLOG
  *  \brief The maximum number of queued pending connections for cnode's sockets
  *
- *  The maximum number of queued pending connections for cnode's sockets.  If it grows above this number, any connecting client may be rejected or have to retry
+ *  The maximum number of queued pending connections for cnode's sockets.  If it grows above this number, any connecting
+ * client may be rejected or have to retry
  */
 #define BACKLOG 20
 /*! \def STIME_MARGIN
  *  \brief The number of seconds given for all components to start up before the first MATLAB function may execute
  *
- * This margin is given from the time enodeRunReq kicked off.  It is baked in before it is sent to the enodes.  The enodes then use that time to command MATLAB to start the programs execution at that time.
+ * This margin is given from the time enodeRunReq kicked off.  It is baked in before it is sent to the enodes.  The
+ * enodes then use that time to command MATLAB to start the programs execution at that time.
  */
 #define STIME_MARGIN 35
 
-char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the username enode is running as.  It is used to SSH to any enodes */
+char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the
+                       username enode is running as.  It is used to SSH to any enodes */
 struct nodeInfo *sysConf;
 vector<int> fdList;
 
@@ -54,7 +57,8 @@ int ss;
 /**
  * Called before any exit, cleanly shutdowns any open sockets.
  *
- * Cleanly shutdowns opened sockets.  Iterates through the fdList and shuts down each socket, this prevents waiting for the system to reap the sockets and allows the program to be properly restarted and recover from crashes
+ * Cleanly shutdowns opened sockets.  Iterates through the fdList and shuts down each socket, this prevents waiting for
+ * the system to reap the sockets and allows the program to be properly restarted and recover from crashes
  */
 void destroySockets() {
 	int fd;
@@ -64,7 +68,7 @@ void destroySockets() {
 		fdList.pop_back();
 		cout << "Closing socket: " << fd << endl;
 		shutdown(fd, SHUT_RDWR);
-        close(fd);
+		close(fd);
 	}
 }
 
@@ -73,9 +77,7 @@ void destroySockets() {
  *
  * Cleanly frees all memory, prevents leaks. Frees sysconf and any other allocated structures.
  */
-void cleanUpMemory(){
-    free(sysConf);
-}
+void cleanUpMemory() { free(sysConf); }
 
 int getFreeNodeInfo() {
 	int i;
@@ -122,6 +124,13 @@ void printNodeInfo() {
 	cout << endl;
 }
 
+/**
+ * Sends Acknowledgement message to an ENode
+ *
+ * Sends acknowledgement payload to the specific enode
+ * \param nodeID ID Number of Enode to send to
+ * \param sock Control socket fd
+ */
 void txMsgEnodeRegAck(int sock, int nodeId) {
 	ctrlMsg_t msg;
 	cMsgEnodeRegAck_t *pload;
@@ -133,7 +142,17 @@ void txMsgEnodeRegAck(int sock, int nodeId) {
 	write(sock, &msg, MSG_LEN(cMsgEnodeRegAck_t));
 }
 
-void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
+/**
+ * Handles enode registration message
+ *
+ * When a registration is received, a nodeInfo structure is populated in sysConf with its parameters.
+ * Log directories are also created if they do not already exist
+ * If an enode was previously connected to this cnode, it will recognize and reconnect
+ * \param sock
+ * \param pload
+ * \param size
+ */
+int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 	int nodeId;
 	char command[512];
 	int recFlag = 0;
@@ -151,10 +170,10 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		nodeId = getFreeNodeInfo();
 		if (nodeId == -1) {
 			cout << "No more space for nodeInfo\n";
-            destroySockets();
-            cleanUpMemory();
-		    exit(-ENOMEM);
-        }
+			destroySockets();
+			cleanUpMemory();
+			return -ENOMEM;
+		}
 		sysConf[nodeId].state = 1;
 		sysConf[nodeId].sockFd = sock;
 		strcpy(sysConf[nodeId].ipaddr, pload->ipaddr);
@@ -164,14 +183,15 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		// printNodeInfo();
 
 		// create log directories
-	    sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
-    	system(command);
+		sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
+		system(command);
 	} else {
 		sysConf[nodeId].sockFd = sock;
 	}
 
-	// send acknoledge
+	// send acknowledge
 	txMsgEnodeRegAck(sock, nodeId);
+    return 0;
 }
 
 void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
@@ -322,7 +342,7 @@ int downloadMatFiles() {
 		system(cbuf);
 		sprintf(cbuf, "ssh %s@%s 'cd wdemo/run/enode; tar xfz umat.tgz; rm umat.tgz'", userName, sysConf[cIdx].ipaddr);
 		system(cbuf);
-        remove("../../usr/umat.tgz");
+		remove("../../usr/umat.tgz");
 
 		dlEnodeCount++;
 	}
@@ -421,7 +441,7 @@ int enodeLogReq() {
 	return 0;
 }
 
-void logAnalysis() {
+int logAnalysis() {
 	char cbuf[1024];
 	int cIdx = -1;
 	FILE *fp;
@@ -429,11 +449,11 @@ void logAnalysis() {
 	// top analysis matlab script generation
 	fp = fopen("../log/logAnalysis.m", "w");
 	if (fp == NULL) {
-		printf("fail to open logAnalysis.m\n");
+		printf("Failed to open logAnalysis.m\n");
 		destroySockets();
-        cleanUpMemory();
-	    exit(-ENOENT);
-    }
+		cleanUpMemory();
+		return -ENOENT;
+	}
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp("NULL", sysConf[cIdx].mLogFile) == 0) continue;
@@ -457,6 +477,7 @@ void logAnalysis() {
 	// perfrom analysis with log files
 	sprintf(cbuf, "cd ../log; matlab -r logAnalysis");
 	system(cbuf);
+	return 0;
 }
 
 void enodeTermReq() {
@@ -570,10 +591,10 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 		case CMD_LOG_ANAL:
 			logAnalysis();
 			break;
-        /*
-         * TODO: Is this case ever hit?
-         * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
-         */
+		/*
+		 * TODO: Is this case ever hit?
+		 * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
+		 */
 		case (CMD_DL_MATLAB | CMD_EX_MATLAB):
 			dlNExecution();
 			break;
@@ -583,7 +604,7 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 }
 
 int nodeControl(int s) {
-	int size;
+	int size, ret_code;
 	char buffer[2048];
 	ctrlMsg_t *ctrlMsg;
 
@@ -592,7 +613,10 @@ int nodeControl(int s) {
 	if (size <= 0) return -1;
 	switch (ctrlMsg->hdr.type) {
 		case MSG_ENODE_REG:
-			rxMsgEnodeReg(s, (cMsgEnodeReg_t *)(ctrlMsg->pload), size);
+			ret_code = rxMsgEnodeReg(s, (cMsgEnodeReg_t *)(ctrlMsg->pload), size);
+            if(ret_code < 0){
+                printf("Stubbed handling for failed registration (Return code: %d)\r\n", ret_code);
+            }
 			break;
 		case MSG_ENODE_DL_ACK:
 			rxMsgEnodeDlAck(s, (cMsgEnodeDlAck_t *)(ctrlMsg->pload), size);
@@ -631,12 +655,12 @@ int controllerStart() {
 	while (1) {
 		read_fd_set = active_fd_set;
 		int ret_code = select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL);
-        if (ret_code < 0) {
-            printf("Select error: %d\r\n", ret_code);
-            destroySockets();
-            cleanUpMemory();
-		    return ret_code;
-        }
+		if (ret_code < 0) {
+			printf("Select error: %d\r\n", ret_code);
+			destroySockets();
+			cleanUpMemory();
+			return ret_code;
+		}
 		for (i = 0; i < FD_SETSIZE; ++i) {
 			if (FD_ISSET(i, &read_fd_set)) {
 				if (i == ss) {  // server
@@ -672,32 +696,38 @@ void controllerInit() {
 
 	ss = socket(AF_INET, SOCK_STREAM, 0);
 	if (ss < 0) {
-        printf("Socket open error: %d\r\n", ss);
-        destroySockets();
-        cleanUpMemory();
+		printf("Socket open error: %d\r\n", ss);
+		destroySockets();
+		cleanUpMemory();
 		exit(ss);
 	}
 	fdList.push_back(ss);
 
 	r = bind(ss, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	if (r < 0) {
-        printf("Bind error: %d\r\n", r);
-        destroySockets();
-        cleanUpMemory();
+		printf("Bind error: %d\r\n", r);
+		destroySockets();
+		cleanUpMemory();
 		exit(r);
 	}
 
 	r = listen(ss, BACKLOG);
 	if (r < 0) {
-        printf("Listen error: %d\r\n", r);
-        destroySockets();
-        cleanUpMemory();
+		printf("Listen error: %d\r\n", r);
+		destroySockets();
+		cleanUpMemory();
 		exit(r);
 	}
 }
 
-void uiServerStart() {
-	int choice;
+/**
+ * Displays the main TUI (terminal user interface) options
+ *
+ * Handles the users input, and in turn sends commands to the network controller thread to execute commands and handle
+ * enode responses \return 0 for success, or any error codes surfaced in underlying components
+ */
+int uiServerStart() {
+	int choice, ret_code;
 	string buffer = "";
 
 	while (1) {
@@ -768,18 +798,21 @@ void uiServerStart() {
 					enodeLogReq();
 					break;
 				case 6:
-					logAnalysis();
+					ret_code = logAnalysis();
+					if (ret_code < 0) {
+						return ret_code;
+					}
 					break;
 				case 0:
 					enodeTermReq();
-					sleep(0.5);
+					sleep(1);
 					cout << endl;
 					cout << "=================================================\n";
 					cout << "           End of experiment system\n";
 					cout << "=================================================\n\n\n";
-                    destroySockets();
-                    cleanUpMemory();
-					exit(0);
+					destroySockets();
+					cleanUpMemory();
+					return 0;
 				default:
 					break;
 			}
@@ -790,23 +823,23 @@ void uiServerStart() {
 /**
  * Gets the username that cnode is running as
  *
- * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for it.
- * Typically it used to store the username in the global character array userName of length 128.
+ * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for
+ * it. Typically it used to store the username in the global character array userName of length 128.
  *
  * @param userName The username is stored in this character array.
  */
 void getUserName(char *userName) {
-    struct passwd *pass;
-    pass = getpwuid(getuid());
-    strcpy(userName,pass->pw_name);
+	struct passwd *pass;
+	pass = getpwuid(getuid());
+	strcpy(userName, pass->pw_name);
 }
 
 /**
  * Main function, starts the cnode
  *
- * Prints the main banner, and then spins off the UI thread providing the text input
- * This also starts the socket controller than handles accepting enode connections
- * The UI thread commands the main thread (the controller) to send commands to and from enodes
+ * Prints the main banner, and then spins off the network controller thread.
+ * The socket (network) controller than handles accepting enode connections
+ * The UI (main) thread commands the secondary thread (the controller) to send commands to and from enodes
  */
 int main() {
 	getUserName(userName);
@@ -818,7 +851,8 @@ int main() {
 	cout << "=                  VERSION: " << verStr << "               =\n";
 
 	controllerInit();
-
-	thread t1(uiServerStart);
-	return controllerStart();
+	// Launch network thread handling enode connections
+	thread controllerThread(controllerStart);
+	// Start graphical interface
+	return uiServerStart();
 }
