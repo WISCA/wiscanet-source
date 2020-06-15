@@ -1178,7 +1178,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             transmit_thread.create_thread(boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot));
         }
         else {
-            printf("unknown macmode = %s\n", macmode);
+            printf("unknown macmode = %s\n", macmode.c_str());
             exit(1);
         }
     }
@@ -1198,7 +1198,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]){
             else throw std::runtime_error("Unknown type " + type);
         }
         else {
-            printf("unknown macmode = %s\n", macmode);
+            printf("unknown macmode = %s\n", macmode.c_str());
             exit(1);
         }
     }

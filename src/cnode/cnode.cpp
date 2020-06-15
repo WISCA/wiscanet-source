@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <csignal>
 #include <iostream>
@@ -65,6 +66,15 @@ void destroySockets() {
 		shutdown(fd, SHUT_RDWR);
         close(fd);
 	}
+}
+
+/**
+ * Called before any exit, frees all relevant memory.
+ *
+ * Cleanly frees all memory, prevents leaks. Frees sysconf and any other allocated structures.
+ */
+void cleanUpMemory(){
+    free(sysConf);
 }
 
 int getFreeNodeInfo() {
@@ -142,8 +152,9 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		if (nodeId == -1) {
 			cout << "No more space for nodeInfo\n";
             destroySockets();
-			exit(1);
-		}
+            cleanUpMemory();
+		    exit(-ENOMEM);
+        }
 		sysConf[nodeId].state = 1;
 		sysConf[nodeId].sockFd = sock;
 		strcpy(sysConf[nodeId].ipaddr, pload->ipaddr);
@@ -420,8 +431,9 @@ void logAnalysis() {
 	if (fp == NULL) {
 		printf("fail to open logAnalysis.m\n");
 		destroySockets();
-        exit(1);
-	}
+        cleanUpMemory();
+	    exit(-ENOENT);
+    }
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp("NULL", sysConf[cIdx].mLogFile) == 0) continue;
@@ -605,7 +617,7 @@ int nodeControl(int s) {
 	return size;
 }
 
-void controllerStart() {
+int controllerStart() {
 	int i;
 	int sc;
 	struct sockaddr_in client_addr;
@@ -618,11 +630,13 @@ void controllerStart() {
 	addrlen = sizeof(client_addr);
 	while (1) {
 		read_fd_set = active_fd_set;
-		if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-			cout << "select error\n";
+		int ret_code = select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL);
+        if (ret_code < 0) {
+            printf("Select error: %d\r\n", ret_code);
             destroySockets();
-			exit(1);
-		}
+            cleanUpMemory();
+		    return ret_code;
+        }
 		for (i = 0; i < FD_SETSIZE; ++i) {
 			if (FD_ISSET(i, &read_fd_set)) {
 				if (i == ss) {  // server
@@ -658,28 +672,31 @@ void controllerInit() {
 
 	ss = socket(AF_INET, SOCK_STREAM, 0);
 	if (ss < 0) {
-		cout << "socket open error\n";
+        printf("Socket open error: %d\r\n", ss);
         destroySockets();
-		exit(1);
+        cleanUpMemory();
+		exit(ss);
 	}
 	fdList.push_back(ss);
 
 	r = bind(ss, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	if (r < 0) {
-		cout << "bind error\n";
+        printf("Bind error: %d\r\n", r);
         destroySockets();
-		exit(1);
+        cleanUpMemory();
+		exit(r);
 	}
 
 	r = listen(ss, BACKLOG);
 	if (r < 0) {
-		cout << "listen error\n";
+        printf("Listen error: %d\r\n", r);
         destroySockets();
-		exit(1);
+        cleanUpMemory();
+		exit(r);
 	}
 }
 
-void uiServerStart(string msg) {
+void uiServerStart() {
 	int choice;
 	string buffer = "";
 
@@ -761,6 +778,7 @@ void uiServerStart(string msg) {
 					cout << "           End of experiment system\n";
 					cout << "=================================================\n\n\n";
                     destroySockets();
+                    cleanUpMemory();
 					exit(0);
 				default:
 					break;
@@ -801,8 +819,6 @@ int main() {
 
 	controllerInit();
 
-	thread t1(uiServerStart, "hello");
-	controllerStart();
-
-	return 0;
+	thread t1(uiServerStart);
+	return controllerStart();
 }
