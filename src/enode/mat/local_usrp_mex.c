@@ -19,24 +19,22 @@ int txSockfd = -1;
 struct sockaddr_in si_other, si_me, si_rcon;
 
 void txInit(char *ipaddr, int portNum) {
-
-	if ((txSockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+	if ((txSockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		mexPrintf("socket() error\n");
 		return;
 	}
 
-	memset((char *) &si_other, 0, sizeof(si_other));
+	memset((char *)&si_other, 0, sizeof(si_other));
 	si_other.sin_family = AF_INET;
 	si_other.sin_port = htons(portNum);
-	if (inet_aton(ipaddr, (struct in_addr *)&si_other.sin_addr)==0) {
+	if (inet_aton(ipaddr, (struct in_addr *)&si_other.sin_addr) == 0) {
 		mexPrintf("inet_aton() failed\n");
 		return;
 	}
 }
 
 void rxInit(char *ipaddr, int portNum, int cportNum) {
-
-	if ((rxSockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+	if ((rxSockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		mexPrintf("socket() error\n");
 		return;
 	}
@@ -50,54 +48,43 @@ void rxInit(char *ipaddr, int portNum, int cportNum) {
 		return;
 	}
 
-	if ((rxCnSockfd=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+	if ((rxCnSockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		mexPrintf("rx control socket() error\n");
 		return;
 	}
 
-	memset((char *) &si_rcon, 0, sizeof(si_rcon));
+	memset((char *)&si_rcon, 0, sizeof(si_rcon));
 	si_rcon.sin_family = AF_INET;
 	si_rcon.sin_port = htons(cportNum);
-	if (inet_aton(ipaddr, (struct in_addr *)&si_rcon.sin_addr)==0) {
+	if (inet_aton(ipaddr, (struct in_addr *)&si_rcon.sin_addr) == 0) {
 		mexPrintf("inet_aton() failed\n");
 		return;
 	}
 }
 
 void sendPacket(double start_time, char *buf, int len) {
-
-	int n;
 	int totalTx = 0, txLen, txUnit = 4095, txResult = -1;
 	struct timespec spec;
 	double ctime;
 	useconds_t stime;
 
-	/*
-float *fdata;
-fdata = (float *)buf;
-int i;
-for(i=0; i<len/8; i+=2) {
-    printf("%f %f\n", fdata[i], fdata[i+1]);
-}
-	 */
-
-
-	while(totalTx < len) {
-		if((len - totalTx) > txUnit) txLen = txUnit;
-		else txLen = len - totalTx;
+	while (totalTx < len) {
+		if ((len - totalTx) > txUnit)
+			txLen = txUnit;
+		else
+			txLen = len - totalTx;
 		txResult = sendto(txSockfd, (buf + totalTx), txLen, 0, (struct sockaddr *)&si_other, sizeof(si_other));
-		if(txResult == -1) break;
+		if (txResult == -1) break;
 		totalTx += txResult;
 	}
 	sendto(txSockfd, (char *)&start_time, sizeof(double), 0, (struct sockaddr *)&si_other, sizeof(si_other));
 	totalTx += sizeof(double);
 	sendto(txSockfd, buf, 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
 
-
 	/* wait tx completion */
-	if(start_time != 0.0) {
+	if (start_time != 0.0) {
 		clock_gettime(CLOCK_REALTIME, &spec);
-		ctime = (double)(spec.tv_sec) + (double)(spec.tv_nsec/1E9);
+		ctime = (double)(spec.tv_sec) + (double)(spec.tv_nsec / 1E9);
 		stime = (useconds_t)((start_time - ctime) * 1E6) + 200000;
 		usleep(stime);
 	}
@@ -106,103 +93,75 @@ for(i=0; i<len/8; i+=2) {
 }
 
 void controlRecv(double start_time) {
-
 	/* send control packet */
 	sendto(rxCnSockfd, (char *)&start_time, 16, 0, (struct sockaddr *)&si_rcon, sizeof(si_rcon));
 }
 
 int recvPacket(char *buf, int len) {
-
 	int retval, slen;
 
 	unsigned int buf_pos = 0;
 
-	unsigned int rxunit = 4000*4;
-	/* receive packet */
-	/*       if(len > DBLEN) {
-        mexPrintf("rx len (%d) is greater than buffer len (%d)\n", len, DBLEN);
-        exit(1);
-    }
-	 */
+	unsigned int rxunit = 4000 * 4;
 
-	while(1){
-		unsigned int readlen=len-buf_pos;
+	while (1) {
+		unsigned int readlen = len - buf_pos;
 
-/*		mexPrintf("DEBUG: READLINE: readlen:%d\n",readlen);*/
+		if (readlen > 0) {
+			retval = recvfrom(rxSockfd, (buf + buf_pos), rxunit, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 
-		if(readlen>0){
-
-			retval = recvfrom(rxSockfd, (buf+buf_pos), rxunit, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-
-/*			mexPrintf("DEBUG: READLINE: retval:%d\n",retval);*/
-
-			if( retval==0){
-				mexPrintf("complete one receiving\n");
-/*				break;*/
+			if (retval == 0) {
+				mexPrintf("Completed one receiving cycle\n");
 			}
-			if(retval<0) {
-				perror( "recvfrom() or recv()" );
+			if (retval < 0) {
+				perror("recvfrom() or recv()");
 				mexPrintf("error on receiving\n");
 				break;
 			}
 		}
 
-		/*			fprintf(stderr,"RET:%d/%d ",retval,s_errno);*/
-		readlen=retval>0?retval:0;
-		buf_pos+=readlen;
+		readlen = retval > 0 ? retval : 0;
+		buf_pos += readlen;
 
-		if(buf_pos>=len )
-			break;
-
-		/*		if(readlen<1000)
-		    usleep(DEFAULT_USLEEP);
-	    }*/
+		if (buf_pos >= len) break;
 	}
 
 	return buf_pos;
-
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-
 	char cmd[CBLEN];
 	char ipaddr[CBLEN];
 	int portNum;
 	int cportNum;
-	char *dBuf;
 	short *sBuf;
-	int i;
 	int len;
 	const int *dim_array;
 	mwSize dims[1];
 	int n;
 	double start_time;
 
-	if(nrhs < 1) {
+	if (nrhs < 1) {
 		mexPrintf("need more input arguments\n");
 		return;
 	}
 
 	mxGetString(prhs[0], cmd, CBLEN);
-	/*
-    mexPrintf("%s\n", cmd);
-	 */
 
-	if(!strcmp("txinit", cmd)) {
+	if (!strcmp("txinit", cmd)) {
 		mexPrintf("Init TX operation\n");
 		mxGetString(prhs[1], ipaddr, CBLEN);
 		portNum = mxGetScalar(prhs[2]);
 		mexPrintf("%s\n", ipaddr);
 		mexPrintf("%d\n", portNum);
 		txInit(ipaddr, portNum);
-		if(txSockfd <= 0) {
+		if (txSockfd <= 0) {
 			mexErrMsgTxt("Socket open error\n");
 			txSockfd = -1;
 		}
 		plhs[0] = mxCreateDoubleScalar(txSockfd);
 		nlhs = 1;
-	}
-	else if(!strcmp("rxinit", cmd)) {
+	} else if (!strcmp("rxinit", cmd)) {
 		mexPrintf("Init RX operation\n");
 		mxGetString(prhs[1], ipaddr, CBLEN);
 		portNum = mxGetScalar(prhs[2]);
@@ -210,17 +169,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		mexPrintf("%s\n", ipaddr);
 		mexPrintf("%d, %d\n", portNum, cportNum);
 		rxInit(ipaddr, portNum, cportNum);
-		if(rxSockfd <= 0) {
+		if (rxSockfd <= 0) {
 			mexErrMsgTxt("Socket open error\n");
 			rxSockfd = -1;
 		}
 		plhs[0] = mxCreateDoubleScalar(rxSockfd);
 		nlhs = 1;
 
-
-	}
-	else if(!strcmp("write", cmd)) {
-		if(txSockfd <= 0) {
+	} else if (!strcmp("write", cmd)) {
+		if (txSockfd <= 0) {
 			mexPrintf("socket is not ready\n");
 			return;
 		}
@@ -230,28 +187,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		start_time = mxGetScalar(prhs[2]);
 		mexPrintf("Write operation %f\n", start_time);
 		sendPacket(start_time, (char *)sBuf, len);
-	}
-	else if(!strcmp("read", cmd)) {
-
-/*		mexPrintf("local_usrp_mex: read control operation here\n");*/
-
-		if(rxCnSockfd <= 0) {
+	} else if (!strcmp("read", cmd)) {
+		if (rxCnSockfd <= 0) {
 			mexPrintf("rx control socket is not ready\n");
 			return;
 		}
 
-
-		if(rxSockfd <= 0) {
+		if (rxSockfd <= 0) {
 			mexPrintf("rx socket is not ready\n");
 			return;
 		}
-
 
 		len = mxGetScalar(prhs[1]);
 
 		start_time = mxGetScalar(prhs[2]);
 
-/*		mexPrintf("local_usrp_mex: read control operation : start_time = %f\n", start_time);*/
+		/*		mexPrintf("local_usrp_mex: read control operation : start_time = %f\n", start_time);*/
 
 		dims[0] = len;
 		plhs[1] = mxCreateNumericArray(1, dims, mxINT16_CLASS, mxREAL);
@@ -261,26 +212,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 		n = recvPacket((char *)sBuf, len * sizeof(short));
 
-/*		mexPrintf("local_usrp_mex: read samps, n=%d \n", n/sizeof(short)/2);*/
+		/*		mexPrintf("local_usrp_mex: read samps, n=%d \n", n/sizeof(short)/2);*/
 
-		plhs[0] = mxCreateDoubleScalar(n/sizeof(short)/2);
+		plhs[0] = mxCreateDoubleScalar(n / sizeof(short) / 2);
 		nlhs = 2;
-	}
-/*	else if(!strcmp("rcon", cmd)) {
-		if(rxCnSockfd <= 0) {
-			mexPrintf("rx control socket is not ready\n");
-			return;
-		}
-		start_time = mxGetScalar(prhs[1]);
-		mexPrintf("local_usrp_mex: read control operation : start_time = %f\n", start_time);
-		controlRecv(start_time);
-		nlhs = 0;
-	}*/
-	else if(!strcmp("close", cmd)) {
+	} else if (!strcmp("close", cmd)) {
 		mexPrintf("close operation\n");
-		if(txSockfd > 0) close(txSockfd);
-		if(rxSockfd > 0) close(rxSockfd);
-		if(rxCnSockfd > 0) close(rxCnSockfd);
+		if (txSockfd > 0) close(txSockfd);
+		if (rxSockfd > 0) close(rxSockfd);
+		if (rxCnSockfd > 0) close(rxCnSockfd);
 		txSockfd = -1;
 		rxSockfd = -1;
 		rxCnSockfd = -1;
