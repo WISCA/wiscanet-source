@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <pwd.h>
@@ -9,7 +10,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <csignal>
+#include <future>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -54,6 +57,8 @@ int logEnodeAckCount;
 
 int ss;
 
+std::atomic<bool> shutdownFlag; /*!< Flag to shutdown network controller when exiting */
+
 /**
  * Called before any exit, cleanly shutdowns any open sockets.
  *
@@ -66,7 +71,6 @@ void destroySockets() {
 	while (fdList.size() != 0) {
 		fd = fdList.back();
 		fdList.pop_back();
-		cout << "Closing socket: " << fd << endl;
 		shutdown(fd, SHUT_RDWR);
 		close(fd);
 	}
@@ -191,7 +195,7 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 
 	// send acknowledge
 	txMsgEnodeRegAck(sock, nodeId);
-    return 0;
+	return 0;
 }
 
 void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
@@ -614,9 +618,9 @@ int nodeControl(int s) {
 	switch (ctrlMsg->hdr.type) {
 		case MSG_ENODE_REG:
 			ret_code = rxMsgEnodeReg(s, (cMsgEnodeReg_t *)(ctrlMsg->pload), size);
-            if(ret_code < 0){
-                printf("Stubbed handling for failed registration (Return code: %d)\r\n", ret_code);
-            }
+			if (ret_code < 0) {
+				printf("Stubbed handling for failed registration (Return code: %d)\r\n", ret_code);
+			}
 			break;
 		case MSG_ENODE_DL_ACK:
 			rxMsgEnodeDlAck(s, (cMsgEnodeDlAck_t *)(ctrlMsg->pload), size);
@@ -641,7 +645,7 @@ int nodeControl(int s) {
 	return size;
 }
 
-int controllerStart() {
+void controllerStart() {
 	int i;
 	int sc;
 	struct sockaddr_in client_addr;
@@ -650,16 +654,13 @@ int controllerStart() {
 
 	FD_ZERO(&active_fd_set);
 	FD_SET(ss, &active_fd_set);
-
-	addrlen = sizeof(client_addr);
-	while (1) {
+    addrlen = sizeof(client_addr);
+	while (!shutdownFlag) {
 		read_fd_set = active_fd_set;
 		int ret_code = select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL);
 		if (ret_code < 0) {
 			printf("Select error: %d\r\n", ret_code);
-			destroySockets();
-			cleanUpMemory();
-			return ret_code;
+            break;
 		}
 		for (i = 0; i < FD_SETSIZE; ++i) {
 			if (FD_ISSET(i, &read_fd_set)) {
@@ -676,6 +677,7 @@ int controllerStart() {
 			}
 		}
 	}
+	cout << "Network controller has shutdown" << endl;
 }
 
 void controllerInit() {
@@ -721,26 +723,61 @@ void controllerInit() {
 }
 
 /**
- * Displays the main TUI (terminal user interface) options
+ * Gets the username that cnode is running as
  *
- * Handles the users input, and in turn sends commands to the network controller thread to execute commands and handle
- * enode responses \return 0 for success, or any error codes surfaced in underlying components
+ * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for
+ * it. Typically it used to store the username in the global character array userName of length 128.
+ *
+ * @param userName The username is stored in this character array.
  */
-int uiServerStart() {
+void getUserName(char *userName) {
+	struct passwd *pass;
+	pass = getpwuid(getuid());
+	strcpy(userName, pass->pw_name);
+}
+
+/**
+ * Main function, starts the cnode
+ *
+ * Prints the main banner, and then spins off the network controller thread.
+ * The socket (network) controller than handles accepting enode connections
+ * Also runs the graphical interface once the network controller is started
+ * which displays the main TUI (terminal user interface) options.
+ * Handles the users input, and in turn sends commands to the network controller thread to execute commands and handle
+ * enode responses
+ * \return 0 for success, or any error codes surfaced in underlying components
+ */
+int main() {
+	// Get username we are runningas (uid)
+	getUserName(userName);
+	// Set thread shutdown flag to false
+	shutdownFlag = false;
+	// Clear the screen and we're off!
+	system("clear");
+	cout << "=================================================" << endl;
+	cout << "=                  WISCA SDR-Network            =" << endl;
+	cout << "=================================================" << endl;
+	cout << "=                  VERSION: " << verStr << "               =" << endl;
+
+	controllerInit();
+	// Launch network controller thread
+	thread controllerThread(controllerStart);
+	// Start graphical interface
 	int choice, ret_code;
 	string buffer = "";
 
 	while (1) {
 		cout << "=================================================\n";
-		cout << " 1. Print enode status\n";
-		cout << " 2. Download user MATLAB code\n";
-		cout << " 3. Execute MATLAB code\n";
-		cout << " 4. Stop MATLAB code\n";
-		cout << " 5. Collect log\n";
-		cout << " 6. Log analysis\n";
-		cout << " 0. Exit\n";
-		cout << "=================================================\n\n";
-		cout << "\nenter> ";
+		cout << " a. Remote Control Menu" << endl;
+		cout << " 1. Print enode status" << endl;
+		cout << " 2. Download user MATLAB code" << endl;
+		cout << " 3. Execute MATLAB code" << endl;
+		cout << " 4. Stop MATLAB code" << endl;
+		cout << " 5. Collect log" << endl;
+		cout << " 6. Log analysis" << endl;
+		cout << " 0. Exit" << endl;
+		cout << "=================================================" << endl << endl;
+		cout << "wiscanet> ";
 
 		getline(cin, buffer);
 		cout << endl;
@@ -749,13 +786,13 @@ int uiServerStart() {
 		system("clear");
 
 		if (buffer[0] == 'a') {
-			cout << "=================================================\n";
-			cout << " 1. remote enode start\n";
-			cout << " 2. remote enode stop\n";
-			cout << " 3. matlab code download and start\n";
-			cout << " 4. stop, log collection and log analysis\n";
-			cout << "=================================================\n\n";
-			cout << "\nenter> ";
+			cout << "=================================================" << endl;
+			cout << " 1. remote enode start" << endl;
+			cout << " 2. remote enode stop" << endl;
+			cout << " 3. matlab code download and start" << endl;
+			cout << " 4. stop, log collection and log analysis" << endl;
+			cout << "=================================================" << endl << endl;
+			cout << "wiscanet> ";
 
 			getline(cin, buffer);
 			cout << endl;
@@ -805,54 +842,21 @@ int uiServerStart() {
 					break;
 				case 0:
 					enodeTermReq();
-					sleep(1);
 					cout << endl;
-					cout << "=================================================\n";
-					cout << "           End of experiment system\n";
-					cout << "=================================================\n\n\n";
-					destroySockets();
-					cleanUpMemory();
+					cout << "WISCANET is shutting down..." << endl;
+					sleep(1);
+					// Set atomic shutdown flag for controller thread
+					shutdownFlag = true;
+                    pthread_kill(controllerThread.native_handle(), SIGUSR1);
+					controllerThread.join();  // Wait for controller thread to shutdown and join
+					destroySockets();         // Destroy sockets used
+					cleanUpMemory();          // Free all remaining memory
+					cout << "Shutdown complete." << endl;
+					cout << "=================================================" << endl;
 					return 0;
 				default:
 					break;
 			}
 		}
 	}
-}
-
-/**
- * Gets the username that cnode is running as
- *
- * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for
- * it. Typically it used to store the username in the global character array userName of length 128.
- *
- * @param userName The username is stored in this character array.
- */
-void getUserName(char *userName) {
-	struct passwd *pass;
-	pass = getpwuid(getuid());
-	strcpy(userName, pass->pw_name);
-}
-
-/**
- * Main function, starts the cnode
- *
- * Prints the main banner, and then spins off the network controller thread.
- * The socket (network) controller than handles accepting enode connections
- * The UI (main) thread commands the secondary thread (the controller) to send commands to and from enodes
- */
-int main() {
-	getUserName(userName);
-
-	system("clear");
-	cout << "=================================================\n";
-	cout << "=                  WISCA SDR-N                  =\n";
-	cout << "=================================================\n";
-	cout << "=                  VERSION: " << verStr << "               =\n";
-
-	controllerInit();
-	// Launch network thread handling enode connections
-	thread controllerThread(controllerStart);
-	// Start graphical interface
-	return uiServerStart();
 }
