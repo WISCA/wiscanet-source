@@ -182,6 +182,14 @@ int usrCfgParse(char* xmlFn, cfgData_t* cfg) {
 	cfg->bw = atof(usrElement->GetText());
 	printf("bw = %.1f\n", cfg->bw);
 
+    // Device Address
+	usrConfig = usrConfig->NextSibling();
+	assert(usrConfig);
+	usrElement = usrConfig->ToElement();
+	assert(usrElement);
+	strcpy(cfg->devAddr, usrElement->GetText());
+	printf("Device Address = %s\n", cfg->devAddr);
+
 	printf("=====================================================\n");
 
 	return 0;
