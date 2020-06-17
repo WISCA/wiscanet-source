@@ -182,13 +182,13 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 #ifdef SUDO_MODE
 		sprintf(
 		    cbuf,
-		    "sudo ./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+		    "sudo ./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
 		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
 		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
 #else
 		sprintf(
 		    cbuf,
-		    "./uControl --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+		    "./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
 		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
 		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
 #endif

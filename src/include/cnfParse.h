@@ -20,6 +20,7 @@ typedef struct cfgData_s {
 	double txgain;
 	double rxgain;
 	double bw;
+    char devAddr[128];
 } cfgData_t;
 
 int sysCfgParse(char *xmlFn, char *serverIp, int *serverPort);
