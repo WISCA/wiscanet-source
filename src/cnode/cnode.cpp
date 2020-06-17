@@ -854,7 +854,7 @@ int main() {
 					sleep(1);
 					// Set atomic shutdown flag for controller thread
 					shutdownFlag = true;
-					write(controlFd[1],0,1); // Write a byte to the controlFd
+					write(controlFd[1],0,1); // Write a byte to the controlFd to trigger the end of the system
                     controllerThread.join();  // Wait for controller thread to shutdown and join
 					destroySockets();         // Destroy sockets used
 					cleanUpMemory();          // Free all remaining memory
