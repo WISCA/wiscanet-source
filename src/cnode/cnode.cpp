@@ -55,7 +55,7 @@ int runEnodeCmpCount;
 int logEnodeCount;
 int logEnodeAckCount;
 
-int ss;
+int ss, controlFd[2];
 
 std::atomic<bool> shutdownFlag; /*!< Flag to shutdown network controller when exiting */
 
@@ -654,6 +654,7 @@ void controllerStart() {
 
 	FD_ZERO(&active_fd_set);
 	FD_SET(ss, &active_fd_set);
+    FD_SET(controlFd[0], &active_fd_set);
     addrlen = sizeof(client_addr);
 	while (!shutdownFlag) {
 		read_fd_set = active_fd_set;
@@ -668,7 +669,9 @@ void controllerStart() {
 					sc = accept(ss, (struct sockaddr *)&client_addr, (socklen_t *)&addrlen);
 					fdList.push_back(sc);
 					FD_SET(sc, &active_fd_set);
-				} else {  // client
+				} else if (i == controlFd[0]){
+                    break;
+                } else {  // client
 					if (nodeControl(i) < 0) {
 						close(i);
 						FD_CLR(i, &active_fd_set);
@@ -752,6 +755,10 @@ int main() {
 	getUserName(userName);
 	// Set thread shutdown flag to false
 	shutdownFlag = false;
+     if (pipe(controlFd) < 0){
+         printf("Error opening thread control pipe");
+         exit(1);
+     }
 	// Clear the screen and we're off!
 	system("clear");
 	cout << "=================================================" << endl;
@@ -847,8 +854,8 @@ int main() {
 					sleep(1);
 					// Set atomic shutdown flag for controller thread
 					shutdownFlag = true;
-                    pthread_kill(controllerThread.native_handle(), SIGUSR1);
-					controllerThread.join();  // Wait for controller thread to shutdown and join
+					write(controlFd[1],0,1); // Write a byte to the controlFd
+                    controllerThread.join();  // Wait for controller thread to shutdown and join
 					destroySockets();         // Destroy sockets used
 					cleanUpMemory();          // Free all remaining memory
 					cout << "Shutdown complete." << endl;
