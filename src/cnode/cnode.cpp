@@ -1,4 +1,6 @@
 #include <arpa/inet.h>
+#include <assert.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -8,7 +10,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <csignal>
+#include <future>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -27,17 +31,20 @@ using namespace std;
 /*! \def BACKLOG
  *  \brief The maximum number of queued pending connections for cnode's sockets
  *
- *  The maximum number of queued pending connections for cnode's sockets.  If it grows above this number, any connecting client may be rejected or have to retry
+ *  The maximum number of queued pending connections for cnode's sockets.  If it grows above this number, any connecting
+ * client may be rejected or have to retry
  */
 #define BACKLOG 20
 /*! \def STIME_MARGIN
  *  \brief The number of seconds given for all components to start up before the first MATLAB function may execute
  *
- * This margin is given from the time enodeRunReq kicked off.  It is baked in before it is sent to the enodes.  The enodes then use that time to command MATLAB to start the programs execution at that time.
+ * This margin is given from the time enodeRunReq kicked off.  It is baked in before it is sent to the enodes.  The
+ * enodes then use that time to command MATLAB to start the programs execution at that time.
  */
 #define STIME_MARGIN 35
 
-char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the username enode is running as.  It is used to SSH to any enodes */
+char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the
+                       username enode is running as.  It is used to SSH to any enodes */
 struct nodeInfo *sysConf;
 vector<int> fdList;
 
@@ -48,12 +55,15 @@ int runEnodeCmpCount;
 int logEnodeCount;
 int logEnodeAckCount;
 
-int ss;
+int ss, controlFd[2];
+
+std::atomic<bool> shutdownFlag; /*!< Flag to shutdown network controller when exiting */
 
 /**
  * Called before any exit, cleanly shutdowns any open sockets.
  *
- * Cleanly shutdowns opened sockets.  Iterates through the fdList and shuts down each socket, this prevents waiting for the system to reap the sockets and allows the program to be properly restarted and recover from crashes
+ * Cleanly shutdowns opened sockets.  Iterates through the fdList and shuts down each socket, this prevents waiting for
+ * the system to reap the sockets and allows the program to be properly restarted and recover from crashes
  */
 void destroySockets() {
 	int fd;
@@ -61,11 +71,17 @@ void destroySockets() {
 	while (fdList.size() != 0) {
 		fd = fdList.back();
 		fdList.pop_back();
-		cout << "Closing socket: " << fd << endl;
 		shutdown(fd, SHUT_RDWR);
-        close(fd);
+		close(fd);
 	}
 }
+
+/**
+ * Called before any exit, frees all relevant memory.
+ *
+ * Cleanly frees all memory, prevents leaks. Frees sysconf and any other allocated structures.
+ */
+void cleanUpMemory() { free(sysConf); }
 
 int getFreeNodeInfo() {
 	int i;
@@ -112,6 +128,13 @@ void printNodeInfo() {
 	cout << endl;
 }
 
+/**
+ * Sends Acknowledgement message to an ENode
+ *
+ * Sends acknowledgement payload to the specific enode
+ * \param nodeID ID Number of Enode to send to
+ * \param sock Control socket fd
+ */
 void txMsgEnodeRegAck(int sock, int nodeId) {
 	ctrlMsg_t msg;
 	cMsgEnodeRegAck_t *pload;
@@ -123,7 +146,17 @@ void txMsgEnodeRegAck(int sock, int nodeId) {
 	write(sock, &msg, MSG_LEN(cMsgEnodeRegAck_t));
 }
 
-void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
+/**
+ * Handles enode registration message
+ *
+ * When a registration is received, a nodeInfo structure is populated in sysConf with its parameters.
+ * Log directories are also created if they do not already exist
+ * If an enode was previously connected to this cnode, it will recognize and reconnect
+ * \param sock
+ * \param pload
+ * \param size
+ */
+int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 	int nodeId;
 	char command[512];
 	int recFlag = 0;
@@ -141,8 +174,9 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		nodeId = getFreeNodeInfo();
 		if (nodeId == -1) {
 			cout << "No more space for nodeInfo\n";
-            destroySockets();
-			exit(1);
+			destroySockets();
+			cleanUpMemory();
+			return -ENOMEM;
 		}
 		sysConf[nodeId].state = 1;
 		sysConf[nodeId].sockFd = sock;
@@ -153,14 +187,15 @@ void rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		// printNodeInfo();
 
 		// create log directories
-	    sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
-    	system(command);
+		sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
+		system(command);
 	} else {
 		sysConf[nodeId].sockFd = sock;
 	}
 
-	// send acknoledge
+	// send acknowledge
 	txMsgEnodeRegAck(sock, nodeId);
+	return 0;
 }
 
 void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
@@ -311,7 +346,7 @@ int downloadMatFiles() {
 		system(cbuf);
 		sprintf(cbuf, "ssh %s@%s 'cd wdemo/run/enode; tar xfz umat.tgz; rm umat.tgz'", userName, sysConf[cIdx].ipaddr);
 		system(cbuf);
-        remove("../../usr/umat.tgz");
+		remove("../../usr/umat.tgz");
 
 		dlEnodeCount++;
 	}
@@ -410,7 +445,7 @@ int enodeLogReq() {
 	return 0;
 }
 
-void logAnalysis() {
+int logAnalysis() {
 	char cbuf[1024];
 	int cIdx = -1;
 	FILE *fp;
@@ -418,9 +453,10 @@ void logAnalysis() {
 	// top analysis matlab script generation
 	fp = fopen("../log/logAnalysis.m", "w");
 	if (fp == NULL) {
-		printf("fail to open logAnalysis.m\n");
+		printf("Failed to open logAnalysis.m\n");
 		destroySockets();
-        exit(1);
+		cleanUpMemory();
+		return -ENOENT;
 	}
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		if (sysConf[cIdx].usrFlag == 1) {
@@ -445,6 +481,7 @@ void logAnalysis() {
 	// perfrom analysis with log files
 	sprintf(cbuf, "cd ../log; matlab -r logAnalysis");
 	system(cbuf);
+	return 0;
 }
 
 void enodeTermReq() {
@@ -558,10 +595,10 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 		case CMD_LOG_ANAL:
 			logAnalysis();
 			break;
-        /*
-         * TODO: Is this case ever hit?
-         * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
-         */
+		/*
+		 * TODO: Is this case ever hit?
+		 * This case is not enumerated in the struct, it may not ever exist, it triggers a warning
+		 */
 		case (CMD_DL_MATLAB | CMD_EX_MATLAB):
 			dlNExecution();
 			break;
@@ -571,7 +608,7 @@ void rxMsgUsrCmd(int sock, cMsgUsrCmd_t *pload, int size) {
 }
 
 int nodeControl(int s) {
-	int size;
+	int size, ret_code;
 	char buffer[2048];
 	ctrlMsg_t *ctrlMsg;
 
@@ -580,7 +617,10 @@ int nodeControl(int s) {
 	if (size <= 0) return -1;
 	switch (ctrlMsg->hdr.type) {
 		case MSG_ENODE_REG:
-			rxMsgEnodeReg(s, (cMsgEnodeReg_t *)(ctrlMsg->pload), size);
+			ret_code = rxMsgEnodeReg(s, (cMsgEnodeReg_t *)(ctrlMsg->pload), size);
+			if (ret_code < 0) {
+				printf("Stubbed handling for failed registration (Return code: %d)\r\n", ret_code);
+			}
 			break;
 		case MSG_ENODE_DL_ACK:
 			rxMsgEnodeDlAck(s, (cMsgEnodeDlAck_t *)(ctrlMsg->pload), size);
@@ -614,14 +654,14 @@ void controllerStart() {
 
 	FD_ZERO(&active_fd_set);
 	FD_SET(ss, &active_fd_set);
-
-	addrlen = sizeof(client_addr);
-	while (1) {
+    FD_SET(controlFd[0], &active_fd_set);
+    addrlen = sizeof(client_addr);
+	while (!shutdownFlag) {
 		read_fd_set = active_fd_set;
-		if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
-			cout << "select error\n";
-            destroySockets();
-			exit(1);
+		int ret_code = select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL);
+		if (ret_code < 0) {
+			printf("Select error: %d\r\n", ret_code);
+            break;
 		}
 		for (i = 0; i < FD_SETSIZE; ++i) {
 			if (FD_ISSET(i, &read_fd_set)) {
@@ -629,7 +669,9 @@ void controllerStart() {
 					sc = accept(ss, (struct sockaddr *)&client_addr, (socklen_t *)&addrlen);
 					fdList.push_back(sc);
 					FD_SET(sc, &active_fd_set);
-				} else {  // client
+				} else if (i == controlFd[0]){
+                    break;
+                } else {  // client
 					if (nodeControl(i) < 0) {
 						close(i);
 						FD_CLR(i, &active_fd_set);
@@ -638,6 +680,7 @@ void controllerStart() {
 			}
 		}
 	}
+	cout << "Network controller has shutdown" << endl;
 }
 
 void controllerInit() {
@@ -658,42 +701,90 @@ void controllerInit() {
 
 	ss = socket(AF_INET, SOCK_STREAM, 0);
 	if (ss < 0) {
-		cout << "socket open error\n";
-        destroySockets();
-		exit(1);
+		printf("Socket open error: %d\r\n", ss);
+		destroySockets();
+		cleanUpMemory();
+		exit(ss);
 	}
 	fdList.push_back(ss);
 
 	r = bind(ss, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	if (r < 0) {
-		cout << "bind error\n";
-        destroySockets();
-		exit(1);
+		printf("Bind error: %d\r\n", r);
+		destroySockets();
+		cleanUpMemory();
+		exit(r);
 	}
 
 	r = listen(ss, BACKLOG);
 	if (r < 0) {
-		cout << "listen error\n";
-        destroySockets();
-		exit(1);
+		printf("Listen error: %d\r\n", r);
+		destroySockets();
+		cleanUpMemory();
+		exit(r);
 	}
 }
 
-void uiServerStart(string msg) {
-	int choice;
+/**
+ * Gets the username that cnode is running as
+ *
+ * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for
+ * it. Typically it used to store the username in the global character array userName of length 128.
+ *
+ * @param userName The username is stored in this character array.
+ */
+void getUserName(char *userName) {
+	struct passwd *pass;
+	pass = getpwuid(getuid());
+	strcpy(userName, pass->pw_name);
+}
+
+/**
+ * Main function, starts the cnode
+ *
+ * Prints the main banner, and then spins off the network controller thread.
+ * The socket (network) controller than handles accepting enode connections
+ * Also runs the graphical interface once the network controller is started
+ * which displays the main TUI (terminal user interface) options.
+ * Handles the users input, and in turn sends commands to the network controller thread to execute commands and handle
+ * enode responses
+ * \return 0 for success, or any error codes surfaced in underlying components
+ */
+int main() {
+	// Get username we are runningas (uid)
+	getUserName(userName);
+	// Set thread shutdown flag to false
+	shutdownFlag = false;
+     if (pipe(controlFd) < 0){
+         printf("Error opening thread control pipe");
+         exit(1);
+     }
+	// Clear the screen and we're off!
+	system("clear");
+	cout << "=================================================" << endl;
+	cout << "=                  WISCA SDR-Network            =" << endl;
+	cout << "=================================================" << endl;
+	cout << "=                  VERSION: " << verStr << "               =" << endl;
+
+	controllerInit();
+	// Launch network controller thread
+	thread controllerThread(controllerStart);
+	// Start graphical interface
+	int choice, ret_code;
 	string buffer = "";
 
 	while (1) {
 		cout << "=================================================\n";
-		cout << " 1. Print enode status\n";
-		cout << " 2. Download user MATLAB code\n";
-		cout << " 3. Execute MATLAB code\n";
-		cout << " 4. Stop MATLAB code\n";
-		cout << " 5. Collect log\n";
-		cout << " 6. Log analysis\n";
-		cout << " 0. Exit\n";
-		cout << "=================================================\n\n";
-		cout << "\nenter> ";
+		cout << " a. Remote Control Menu" << endl;
+		cout << " 1. Print enode status" << endl;
+		cout << " 2. Download user MATLAB code" << endl;
+		cout << " 3. Execute MATLAB code" << endl;
+		cout << " 4. Stop MATLAB code" << endl;
+		cout << " 5. Collect log" << endl;
+		cout << " 6. Log analysis" << endl;
+		cout << " 0. Exit" << endl;
+		cout << "=================================================" << endl << endl;
+		cout << "wiscanet> ";
 
 		getline(cin, buffer);
 		cout << endl;
@@ -702,13 +793,13 @@ void uiServerStart(string msg) {
 		system("clear");
 
 		if (buffer[0] == 'a') {
-			cout << "=================================================\n";
-			cout << " 1. remote enode start\n";
-			cout << " 2. remote enode stop\n";
-			cout << " 3. matlab code download and start\n";
-			cout << " 4. stop, log collection and log analysis\n";
-			cout << "=================================================\n\n";
-			cout << "\nenter> ";
+			cout << "=================================================" << endl;
+			cout << " 1. remote enode start" << endl;
+			cout << " 2. remote enode stop" << endl;
+			cout << " 3. matlab code download and start" << endl;
+			cout << " 4. stop, log collection and log analysis" << endl;
+			cout << "=================================================" << endl << endl;
+			cout << "wiscanet> ";
 
 			getline(cin, buffer);
 			cout << endl;
@@ -751,58 +842,28 @@ void uiServerStart(string msg) {
 					enodeLogReq();
 					break;
 				case 6:
-					logAnalysis();
+					ret_code = logAnalysis();
+					if (ret_code < 0) {
+						return ret_code;
+					}
 					break;
 				case 0:
 					enodeTermReq();
-					sleep(0.5);
 					cout << endl;
-					cout << "=================================================\n";
-					cout << "           End of experiment system\n";
-					cout << "=================================================\n\n\n";
-                    destroySockets();
-					exit(0);
+					cout << "WISCANET is shutting down..." << endl;
+					sleep(1);
+					// Set atomic shutdown flag for controller thread
+					shutdownFlag = true;
+					write(controlFd[1],0,1); // Write a byte to the controlFd to trigger the end of the system
+                    controllerThread.join();  // Wait for controller thread to shutdown and join
+					destroySockets();         // Destroy sockets used
+					cleanUpMemory();          // Free all remaining memory
+					cout << "Shutdown complete." << endl;
+					cout << "=================================================" << endl;
+					return 0;
 				default:
 					break;
 			}
 		}
 	}
-}
-
-/**
- * Gets the username that cnode is running as
- *
- * This username is expected to be the same on all cnode and enodes, and has passwordless SSH enabled between nodes for it.
- * Typically it used to store the username in the global character array userName of length 128.
- *
- * @param userName The username is stored in this character array.
- */
-void getUserName(char *userName) {
-    struct passwd *pass;
-    pass = getpwuid(getuid());
-    strcpy(userName,pass->pw_name);
-}
-
-/**
- * Main function, starts the cnode
- *
- * Prints the main banner, and then spins off the UI thread providing the text input
- * This also starts the socket controller than handles accepting enode connections
- * The UI thread commands the main thread (the controller) to send commands to and from enodes
- */
-int main() {
-	getUserName(userName);
-
-	system("clear");
-	cout << "=================================================\n";
-	cout << "=                  WISCA SDR-N                  =\n";
-	cout << "=================================================\n";
-	cout << "=                  VERSION: " << verStr << "               =\n";
-
-	controllerInit();
-
-	thread t1(uiServerStart, "hello");
-	controllerStart();
-
-	return 0;
 }

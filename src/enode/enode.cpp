@@ -18,7 +18,8 @@
 using namespace std;
 
 /*! \def RADIO_WAIT
- *  \brief Number of seconds to wait before launching MATLAB.  This time is spent launching uControl and initializing the radio
+ *  \brief Number of seconds to wait before launching MATLAB.  This time is spent launching uControl and initializing
+ * the radio
  */
 #define RADIO_WAIT 20
 
@@ -29,6 +30,11 @@ char serverIp[64];
 int serverPort;
 cfgData_t cfg;
 
+/**
+ * Sends registration message to cnode
+ *
+ * Finds enode ip address, builds registration message and sends registration to control node (cnode)
+ */
 void txMsgEnodeReg() {
 	ctrlMsg_t msg;
 	cMsgEnodeReg_t *pload;
@@ -49,6 +55,11 @@ void txMsgEnodeReg() {
 	write(sockfd, &msg, MSG_LEN(cMsgEnodeReg_t));
 }
 
+/**
+ * Open TCP connection to the control node (cnode)
+ *
+ * Opens and connects to the control node over TCP
+ */
 void openSocket() {
 	int r;
 	struct sockaddr_in serv_addr;
@@ -72,12 +83,23 @@ void openSocket() {
 	}
 }
 
+/**
+ * Updates node ID from registration acknowledgement
+ *
+ * Extracts assigned node ID from return payload, configures edge node (enode) to use this, and prints receipt of control node acknowledgement
+ * \param pload Received payload from control node of type cMsgEnodeRegAck_t
+ */
 void rxMsgEnodeRegAck(cMsgEnodeRegAck_t *pload) {
 	// update node id
 	myId = pload->enodeId;
 	cout << "--> msgEnodeRegAck " << myId << endl;
 }
 
+/**
+ * Sends acknowledgement of MATLAB execution
+ *
+ * Sends a message to the control node acknowleding execution of the MATLAB program.  Prints that it has done so.
+ */
 void txMsgEnodeRunAck() {
 	ctrlMsg_t msg;
 	cMsgEnodeRunAck_t *pload;
@@ -188,7 +210,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 		while (1) {
 			sleep(1);
 			printf("%02ld/%d\n", count, RADIO_WAIT);
-			if (count++ > (RADIO_WAIT-1)) break;
+			if (count++ > (RADIO_WAIT - 1)) break;
 		}
 	}
 	getcwd(logFn, sizeof(logFn));
@@ -341,7 +363,7 @@ int main() {
 	sysCfgParse(cnfFName, serverIp, &serverPort);
 
 	openSocket();
-    signal(SIGCHLD, SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 
 	txMsgEnodeReg();
 	mainLoop();

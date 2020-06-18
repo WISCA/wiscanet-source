@@ -35,5 +35,5 @@
 - Ports
   - 9000 - cnode/enode
   - 9940 - uControl TX
-  - 9942 - uControl RX
-  - 9943 - uControl RC
+  - 9942/9944 - uControl RX
+  - 9943/9945 - uControl RC
