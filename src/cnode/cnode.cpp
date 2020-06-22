@@ -45,8 +45,8 @@ using namespace std;
 
 char userName[128]; /*!< Contains the username that cnode is running as.  This is also expected to be the same as the
                        username enode is running as.  It is used to SSH to any enodes */
-struct nodeInfo *sysConf;
-vector<int> fdList;
+struct nodeInfo *sysConf; /*!< System configuration structure containing MAX_ENODE nodeInfos */
+vector<int> fdList; /*!< List of all file descriptions opened by the network controller */
 
 int dlEnodeCount;
 int dlEnodeAckCount;
@@ -83,6 +83,12 @@ void destroySockets() {
  */
 void cleanUpMemory() { free(sysConf); }
 
+/**
+ * Determine and return first unused node
+ *
+ * Iterates through sysConf and finds first unconnected node (state of 0)
+ * \return sysConf index of first free node
+ */
 int getFreeNodeInfo() {
 	int i;
 
@@ -92,7 +98,11 @@ int getFreeNodeInfo() {
 
 	return -1;
 }
-
+/**
+ * Get next active node starting at curIdx
+ *
+ * \return sysConf index of next active ndoe
+ */
 int getActiveNodeIdx(int curIdx) {
 	int i;
 	for (i = curIdx + 1; i < MAX_ENODE; i++) {
@@ -101,6 +111,12 @@ int getActiveNodeIdx(int curIdx) {
 	return -1;
 }
 
+/**
+ * Determine if node was previously connected, based on provided ip address
+ *
+ * \param ipaddr ipaddr of new node to compare against
+ * \return sysConf index of previously connected node, -1 otherwise
+ */
 int checkPrevNodeHistory(char *ipaddr) {
 	int i;
 	for (i = 0; i < MAX_ENODE; i++) {
@@ -115,6 +131,9 @@ int checkPrevNodeHistory(char *ipaddr) {
 	return -1;
 }
 
+/**
+ * Print out information for all nodes
+ */
 void printNodeInfo() {
 	int i;
 
@@ -198,6 +217,14 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 	return 0;
 }
 
+
+/**
+ * Received execution acknowledgement from edge nodes
+ *
+ * Updates sysConf state for the enode, acknowledge that it ran the program, prints message on cnode
+ *
+ * \param pload payload received from edge node
+ */
 void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
 	int nodeId;
 
@@ -211,6 +238,13 @@ void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
 	// printNodeInfo();
 }
 
+/*
+ * Receive compleition message from edge node
+ *
+ * Updates sysConf state for the enode, acknowledge that it has completed running, prints message on cnode
+ *
+ * \param pload payload recieved from edge node
+ */
 void rxMsgEnodeRunCmpInd(int sock, cMsgEnodeRunCmpInd_t *pload, int size) {
 	int nodeId;
 
