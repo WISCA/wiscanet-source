@@ -123,7 +123,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	uhd::stream_args_t stream_args(cpu_format, wire_format);
 	uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
-	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_MORE);
+	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
 	stream_cmd.num_samps = num_requested_samples;
 
 	rxUnit = rx_stream->get_max_num_samps();
@@ -134,7 +134,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		// rx streamer cmd
 		num_total_samps = 0;
 		stream_cmd.stream_now = false;
-		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_MORE;
+		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE;
 		stream_cmd.time_spec = rxTime;
 
 		rx_stream->issue_stream_cmd(stream_cmd);
@@ -291,7 +291,7 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
 	// setup streamer
-	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_MORE);
+	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
 	stream_cmd.num_samps = num_requested_samples;
 
 	rxUnit = rx_stream->get_max_num_samps();
@@ -309,7 +309,7 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		// rx streamer cmd
 		num_total_samps = 0;
 		stream_cmd.stream_now = false;
-		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_MORE;
+		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE;
 		stream_cmd.time_spec = rxTime;
 		rx_stream->issue_stream_cmd(stream_cmd);
 
@@ -587,12 +587,12 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		printf("assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(), time_now.get_real_secs());
 		// printf("txBufLoc = %d, txLen = %d\n", txBufLoc, txLen);
 
+	}
 		// send a mini EOB packet
 		md.start_of_burst = false;
 		md.has_time_spec = false;
 		md.end_of_burst = true;
 		tx_stream->send("", 0, md);
-	}
 }
 
 void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, size_t tslot) {
