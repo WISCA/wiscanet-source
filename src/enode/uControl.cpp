@@ -571,7 +571,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		prev_txtime = txTime;
 
 		// md setup
-		md.start_of_burst = true;
+		md.start_of_burst = false;
 		md.end_of_burst = false;
 		md.has_time_spec = true;
 		md.time_spec = txTime;
