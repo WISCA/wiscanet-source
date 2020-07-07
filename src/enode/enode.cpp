@@ -86,8 +86,8 @@ void openSocket() {
 /**
  * Updates node ID from registration acknowledgement
  *
- * Extracts assigned node ID from return payload, configures edge node (enode) to use this, and prints receipt of control node acknowledgement
- * \param pload Received payload from control node of type cMsgEnodeRegAck_t
+ * Extracts assigned node ID from return payload, configures edge node (enode) to use this, and prints receipt of
+ * control node acknowledgement \param pload Received payload from control node of type cMsgEnodeRegAck_t
  */
 void rxMsgEnodeRegAck(cMsgEnodeRegAck_t *pload) {
 	// update node id
@@ -182,15 +182,15 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 #ifdef SUDO_MODE
 		sprintf(
 		    cbuf,
-		    "sudo ./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
-		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
-		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
+		    "sudo ./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+		    cfg.devAddr, (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode,
+		    cfg.tSlot, cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
 #else
 		sprintf(
 		    cbuf,
-		    "./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
-		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
-		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
+		    "./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog",
+		    cfg.devAddr, (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode,
+		    cfg.tSlot, cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
 #endif
 		cout << "\n\n\n=====================================================\n";
 		cout << " [enode] start of USRP Control\n";

@@ -25,6 +25,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
@@ -46,6 +47,10 @@
 
 #define MAX_SLOT 4
 
+#define recv_worker_args(format)                                                                           \
+	(usrp, format, wirefmt, file, spb, total_num_samps, channel_nums, total_time, bw_summary, stats, null, \
+	 enable_size_map, continue_on_bad_packet, tslot)
+
 namespace po = boost::program_options;
 namespace po = boost::program_options;
 namespace pt = boost::posix_time;
@@ -59,8 +64,10 @@ void sig_int_handler(int) { stop_signal_called = true; }
 template <typename samp_type>
 void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format, const std::string &wire_format,
                       const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
-                      double time_requested = 0.0, bool bw_summary = false, bool stats = false, bool null = false,
-                      bool enable_size_map = false, bool continue_on_bad_packet = false, size_t tslot = 0) {
+                      std::vector<size_t> channel_nums, double time_requested = 0.0, bool bw_summary = false,
+                      bool stats = false, bool null = false, bool enable_size_map = false,
+                      bool continue_on_bad_packet = false, size_t tslot = 0) {
+	std::cout << "================== RX UMAC worker =================\n";
 	// time variables for scheduling
 	uhd::time_spec_t time_now, rxTime;
 
@@ -87,7 +94,6 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	}
 
 	uhd::rx_metadata_t md;
-	std::vector<samp_type> buff(num_requested_samples);
 	bool overflow_message = true;
 
 	typedef std::map<size_t, size_t> SizeMap;
@@ -101,19 +107,24 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	double timeout;
 	size_t rxLoc;
 	size_t rxUnit;
+    uint16_t numChannels;
 
 	rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-    if(rResult < 0){
-        printf("Receiving command buffer failed (Error %d)\r\n",rResult);
-    }
+	if (rResult < 0) {
+		printf("Receiving command buffer failed (Error %d)\r\n", rResult);
+	}
+    rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr*)&si_me, (socklen_t *)&slen);
+	if (rResult < 0) {
+		printf("Receiving number of channels failed (Error %d)\r\n", rResult);
+	}
 	rxTime = uhd::time_spec_t(*stime);
 	time_now = usrp->get_time_now(0);
 	realRxTime = rxTime.get_real_secs();
 	realNowTime = time_now.get_real_secs();
-	printf("rx ctrl cmd rxTime=%f, time_now =%f\n", realRxTime, realNowTime);
+	printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime, numChannels);
 
 	if (realRxTime < realNowTime) {
-		printf("error : rx time already passed\n");
+		printf("Error: RX time has already passed\n");
 		exit(1);
 	}
 
@@ -121,12 +132,19 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 
 	// create a receive streamer
 	uhd::stream_args_t stream_args(cpu_format, wire_format);
+	stream_args.channels = channel_nums;
 	uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
 	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-	stream_cmd.num_samps = num_requested_samples;
+	stream_cmd.num_samps = num_requested_samples*channel_nums.size();
+
+	printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(), usrp->get_rx_num_channels());
 
 	rxUnit = rx_stream->get_max_num_samps();
+	// allocate buffers to receive with samples (one buffer per channel)
+	printf("[USRP Control] Allocating %ld buffers of %llu samples each\r\n", channel_nums.size(),
+	       num_requested_samples);
+	std::vector<std::vector<samp_type>> rx_buffers(channel_nums.size(), std::vector<samp_type>(num_requested_samples));
 
 	rxUnit = num_requested_samples;
 
@@ -136,17 +154,20 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		stream_cmd.stream_now = false;
 		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE;
 		stream_cmd.time_spec = rxTime;
+		//Tells all channels to stream
+        rx_stream->issue_stream_cmd(stream_cmd);
 
-		rx_stream->issue_stream_cmd(stream_cmd);
-
-		rxLoc = 0;
+		// create a vector of pointers to point to each of the channel buffers
+		std::vector<samp_type*> buff_ptrs;
+		for (size_t i = 0; i < rx_buffers.size(); i++) {
+			buff_ptrs.push_back(&rx_buffers[i].front());
+		}
 
 		while (num_requested_samples > num_total_samps) {
-			/*
-			size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, timeout, enable_size_map);
-			 */
-			size_t num_rx_samps = rx_stream->recv(&buff[rxLoc], rxUnit, md, timeout, enable_size_map);
-			rxLoc += num_rx_samps;
+			size_t num_rx_samps = rx_stream->recv(buff_ptrs, rxUnit, md, timeout);
+			for (size_t i = 0; i < rx_buffers.size(); i++) {
+				buff_ptrs[i] += num_rx_samps / rx_buffers.size();
+			}
 
 			if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_TIMEOUT) {
 				std::cout << boost::format("Timeout while streaming") << std::endl;
@@ -178,51 +199,58 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 				if (it == mapSizes.end()) mapSizes[num_rx_samps] = 0;
 				mapSizes[num_rx_samps] += 1;
 			}
-
+            printf("[USRP Control] Device RX Loop: %lu samples\r\n",num_rx_samps);
 			num_total_samps += num_rx_samps;
 		}
 
-		printf("-- num_total_samps = %ld\n", num_total_samps);
-
+		printf("[USRP Control] Received %ld total samples from device\r\n", num_total_samps);
 		/*
-{
-for (size_t i=0; i<num_total_samps; i++) {
-	printf("%d %d\n", std::real(buff[i]), std::imag(buff[i]));
-}
-}
-		 */
-
+		        {
+		            for (size_t i=0; i<num_total_samps; i++) {
+		                printf("%d %d\r\n", std::real(rx_buffers[0][i]), std::imag(rx_buffers[0][i]));
+		            }
+		        }
+		*/
 		time_now = usrp->get_time_now(0);
 
+		size_t count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
 		// send rx packet to matlab through udp socket
+        for(int i = 0; i < numChannels; i++){
 		size_t txSamps = num_total_samps;
 
 		//		size_t count=0, txTotal=0, txUnit=1000, txLen=0, txResult=0;
-		size_t count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
+		count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
 
 		while (txTotal < txSamps) {
 			if ((txSamps - txTotal) > txUnit)
 				txLen = txUnit;
 			else
 				txLen = txSamps - txTotal;
-			txResult = sendto(sockfd, (&buff.front() + (txUnit * count)), txLen * sizeof(samp_type), 0,
+			txResult = sendto(sockfd, (&rx_buffers[i].front() + (txUnit * count)), txLen * sizeof(samp_type), 0,
 			                  (struct sockaddr *)&si_other, sizeof(si_other));
 			if (txResult < 0) break;
 			count++;
 			txTotal += (txResult / sizeof(samp_type));
 			usleep(20);  // intentional delay for proper context switching
-			             // printf("-- RX : txTotal = %d samps\n", txTotal);
+			// printf("-- RX : txTotal = %d samps\n", txTotal);
 		}
 		// printf("-- RX : txTotal = %d samps\n", txTotal);
-
+        }
 		// send zero size termination packet
-		sendto(sockfd, &buff.front(), 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
+		sendto(sockfd, &rx_buffers[0].front(), 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
 		// printf("-- RX : zero size packet\n");
 
-		printf("RX : time=%f, len=%ld(smpls)\n", time_now.get_real_secs(), txTotal);
+		printf("[USRP Control] Sent at time=%f, len=%ld (samples) \r\n", time_now.get_real_secs(), txTotal);
 
 		// wait RX control command
 		rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+	    if (rResult < 0) {
+		    printf("Receiving command buffer failed (Error %d)\r\n", rResult);
+	    }
+        rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr*)&si_me, (socklen_t *)&slen);
+	    if (rResult < 0) {
+		    printf("Receiving number of channels failed (Error %d)\r\n", rResult);
+	    }
 		rxTime = uhd::time_spec_t(*stime);
 		time_now = usrp->get_time_now(0);
 		realRxTime = rxTime.get_real_secs();
@@ -237,8 +265,9 @@ for (size_t i=0; i<num_total_samps; i++) {
 template <typename samp_type>
 void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format, const std::string &wire_format,
                       const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
-                      double time_requested = 0.0, bool bw_summary = false, bool stats = false, bool null = false,
-                      bool enable_size_map = false, bool continue_on_bad_packet = false, size_t tslot = 0) {
+                      std::vector<size_t> channel_nums, double time_requested = 0.0, bool bw_summary = false,
+                      bool stats = false, bool null = false, bool enable_size_map = false,
+                      bool continue_on_bad_packet = false, size_t tslot = 0) {
 	printf("================== RX TDMA worker (tslot:%ld) =================\n", tslot);
 
 	// time variables for scheduling
@@ -281,9 +310,9 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	char cmdBuf[1024];
 	printf("wait RX start command\n");
 	rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-    if(rResult < 0){
-        printf("Receiving RX Command failed (Error %d)\r\n",rResult);
-    }
+	if (rResult < 0) {
+		printf("Receiving RX Command failed (Error %d)\r\n", rResult);
+	}
 	printf("recv RX start command\n");
 
 	// create a receive streamer
@@ -319,8 +348,8 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 
 		while (not stop_signal_called and (num_requested_samples > num_total_samps or num_requested_samples == 0)) {
 			/*
-			size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, enable_size_map);
-			 */
+			   size_t num_rx_samps = rx_stream->recv(&buff.front(), buff.size(), md, 3.0, enable_size_map);
+			   */
 			size_t num_rx_samps = rx_stream->recv(&buff[rxLoc], rxUnit, md, 3.0, enable_size_map);
 			rxLoc += num_rx_samps;
 
@@ -363,10 +392,10 @@ void recv_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 			int txSamps = num_total_samps;
 			int count = 0, txTotal = 0, txUnit = 1024, txLen = 0, txResult = 0;
 			/*
-for(size_t i=0; i<num_total_samps; i++) {
-	printf("%d %d\n", std::real(buff[i]), std::imag(buff[i]));
-}
-			 */
+			   for(size_t i=0; i<num_total_samps; i++) {
+			   printf("%d %d\n", std::real(buff[i]), std::imag(buff[i]));
+			   }
+			   */
 			while (txTotal < txSamps) {
 				if ((txSamps - txTotal) > txUnit)
 					txLen = txUnit;
@@ -533,7 +562,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-	std::vector<std::complex<float> > buff(total_num_samps + 1000);  // 1000 for control information
+	std::vector<std::complex<float>> buff(total_num_samps + 1000);  // 1000 for control information
 
 	char *udpBuf;
 	size_t rResult;
@@ -587,7 +616,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		printf("assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(), time_now.get_real_secs());
 		// printf("txBufLoc = %d, txLen = %d\n", txBufLoc, txLen);
 
-        // send a mini EOB packet
+		// send a mini EOB packet
 		md.start_of_burst = false;
 		md.has_time_spec = false;
 		md.end_of_burst = true;
@@ -622,7 +651,7 @@ void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-	std::vector<std::complex<float> > buff(total_num_samps + 1000);
+	std::vector<std::complex<float>> buff(total_num_samps + 1000);
 
 	char *udpBuf;
 	int rResult;
@@ -642,8 +671,8 @@ void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 			udpBuf += rResult;
 			rLen += rResult;
 			/*
-printf("rResult = %d, rLen = %d\n", rResult, rLen);
-			 */
+			   printf("rResult = %d, rLen = %d\n", rResult, rLen);
+			   */
 			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 		} while (rResult > 0);
 		rSamLen = rLen / sizeof(std::complex<float>);
@@ -701,6 +730,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	size_t total_num_samps, spb, tslot, chan = 0;
 	double rate, freq, txgain, rxgain, bw, total_time, setup_time;
 	std::string opmode, macmode;
+	std::string channel_list;
 
 	// setup the program options
 	po::options_description desc("Allowed options");
@@ -723,6 +753,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	    "ref", po::value<std::string>(&ref)->default_value("gpsdo"), "reference source (internal, external, mimo)")(
 	    "wirefmt", po::value<std::string>(&wirefmt)->default_value("sc16"), "wire format (sc8 or sc16)")(
 	    "setup", po::value<double>(&setup_time)->default_value(1.0), "seconds of setup time")(
+	    "channels", po::value<std::string>(&channel_list)->default_value("0"),
+	    "which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")(
 	    "progress", "periodically display short-term bandwidth")("stats", "show average bandwidth on exit")(
 	    "sizemap", "track packet size and display breakdown on exit")("null", "run without writing to file")(
 	    "continue", "don't abort on a bad packet")("skip-lo", "skip checking LO lock status")(
@@ -730,17 +762,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	                                                "node operation mode (TX/RX, TX, RX)")(
 	    "macmode", po::value<std::string>(&macmode)->default_value("TDMA"), "node operation mode (UMAC, TDMA)")(
 	    "tslot", po::value<size_t>(&tslot)->default_value(0), "TDMA tx timeslot");
-	;
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
 
 	// print the help message
 	if (vm.count("help")) {
-		std::cout << boost::format("UHD RX samples to file %s") % desc << std::endl;
-		std::cout << std::endl
-		          << "This application streams data from a single channel of a USRP device to a file.\n"
-		          << std::endl;
+		std::cout << boost::format("WISCANET USRP Controller %s") % desc << std::endl;
+		std::cout << std::endl << "This is the WISCANET USRP Controller\n" << std::endl;
 		return ~0;
 	}
 
@@ -753,11 +782,12 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	if (enable_size_map)
 		std::cout << "Packet size tracking enabled - will only recv one packet at a time!" << std::endl;
 
-	// create a usrp device
+	// Create the RX USRP Device
 	std::cout << std::endl;
 	std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
 	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
+	// Create the TX USRP Device
 	std::cout << std::endl;
 	std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
 	uhd::usrp::multi_usrp::sptr tx_usrp = uhd::usrp::multi_usrp::make(args);
@@ -774,11 +804,23 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		std::cerr << "Please specify a valid sample rate" << std::endl;
 		return ~0;
 	}
-	std::cout << boost::format("Setting RX TX Rate: %f Msps...") % (rate / 1e6) << std::endl;
+	std::cout << boost::format("Setting TX and RX Rate: %f Msps...") % (rate / 1e6) << std::endl;
 	usrp->set_rx_rate(rate);
 	std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate() / 1e6) << std::endl << std::endl;
 	tx_usrp->set_tx_rate(rate);
 	std::cout << boost::format("Actual TX Rate: %f Msps...") % (tx_usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
+
+	// Detect which channels to use
+	std::vector<std::string> channel_strings;
+	std::vector<size_t> channel_nums;
+	boost::split(channel_strings, channel_list, boost::is_any_of("\"',"));
+	for (size_t ch = 0; ch < channel_strings.size(); ch++) {
+		size_t chan = std::stoi(channel_strings[ch]);
+		if (chan >= usrp->get_rx_num_channels()) {
+			throw std::runtime_error("Invalid channel(s) specified.");
+		} else
+			channel_nums.push_back(std::stoi(channel_strings[ch]));
+	}
 
 	// set the center frequency
 	if (vm.count("freq")) {  // with default of 0.0 this will always be true
@@ -869,25 +911,22 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		}
 	}
 	if (opmode == "TX/RX" || opmode == "RX") {
-#define recv_worker_args(format)                                                                              \
-	(usrp, format, wirefmt, file, spb, total_num_samps, total_time, bw_summary, stats, null, enable_size_map, \
-	 continue_on_bad_packet, tslot)
 		if (macmode == "TDMA") {
 			if (type == "double")
-				recv_TDMA_worker<std::complex<double> > recv_worker_args("fc64");
+				recv_TDMA_worker<std::complex<double>> recv_worker_args("fc64");
 			else if (type == "float")
-				recv_TDMA_worker<std::complex<float> > recv_worker_args("fc32");
+				recv_TDMA_worker<std::complex<float>> recv_worker_args("fc32");
 			else if (type == "short")
-				recv_TDMA_worker<std::complex<short> > recv_worker_args("sc16");
+				recv_TDMA_worker<std::complex<short>> recv_worker_args("sc16");
 			else
 				throw std::runtime_error("Unknown type " + type);
 		} else if (macmode == "UMAC") {
 			if (type == "double")
-				recv_UMAC_worker<std::complex<double> > recv_worker_args("fc64");
+				recv_UMAC_worker<std::complex<double>> recv_worker_args("fc64");
 			else if (type == "float")
-				recv_UMAC_worker<std::complex<float> > recv_worker_args("fc32");
+				recv_UMAC_worker<std::complex<float>> recv_worker_args("fc32");
 			else if (type == "short")
-				recv_UMAC_worker<std::complex<short> > recv_worker_args("sc16");
+				recv_UMAC_worker<std::complex<short>> recv_worker_args("sc16");
 			else
 				throw std::runtime_error("Unknown type " + type);
 		} else {
