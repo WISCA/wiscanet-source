@@ -727,7 +727,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 
 	// variables to be set by po
 	std::string args, file, type, ant, subdev, ref, wirefmt;
-	size_t total_num_samps, spb, tslot, chan = 0;
+	size_t total_num_samps, spb, tslot;
 	double rate, freq, txgain, rxgain, bw, total_time, setup_time;
 	std::string opmode, macmode;
 	std::string channel_list;
@@ -821,18 +821,36 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		} else
 			channel_nums.push_back(std::stoi(channel_strings[ch]));
 	}
-
-	// set the center frequency
+    size_t numRxChannels = usrp->get_rx_num_channels();
+    size_t numTxChannels = tx_usrp->get_tx_num_channels();
+	uhd::time_spec_t cmd_time;
+    // set the center frequency
 	if (vm.count("freq")) {  // with default of 0.0 this will always be true
 		std::cout << boost::format("Setting RX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tune_request(freq);
 		if (vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
-		usrp->set_rx_freq(tune_request, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numRxChannels; i++){
+		    usrp->set_rx_freq(tune_request, i);
+        }
+       //end timed commands
+        usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Freq: %f MHz...") % (usrp->get_rx_freq() / 1e6) << std::endl << std::endl;
 		std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tx_tune_request(freq);
 		if (vm.count("int-n")) tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
-		tx_usrp->set_tx_freq(tune_request, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        tx_usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numTxChannels; i++){
+		    tx_usrp->set_tx_freq(tune_request, i);
+        }
+       //end timed commands
+        tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Freq: %f MHz...") % (tx_usrp->get_tx_freq() / 1e6) << std::endl
 		          << std::endl;
 	}
@@ -840,31 +858,79 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	// set the rf gain
 	if (vm.count("rxgain")) {
 		std::cout << boost::format("Setting RX Gain: %f dB...") % rxgain << std::endl;
-		usrp->set_rx_gain(rxgain, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numRxChannels; i++){
+		    usrp->set_rx_gain(rxgain,i);
+        }
+       //end timed commands
+        usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Gain: %f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
 	}
 	if (vm.count("txgain")) {
 		std::cout << boost::format("Setting TX Gain: %f dB...") % txgain << std::endl;
-		tx_usrp->set_tx_gain(txgain, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        tx_usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numTxChannels; i++){
+		    tx_usrp->set_tx_gain(txgain, i);
+        }
+       //end timed commands
+        tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Gain: %f dB...") % tx_usrp->get_tx_gain() << std::endl << std::endl;
 	}
 
 	// set the IF filter bandwidth
 	if (vm.count("bw")) {
 		std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % (bw / 1e6) << std::endl;
-		usrp->set_rx_bandwidth(bw, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numRxChannels; i++){
+		    usrp->set_rx_bandwidth(bw, i);
+        }
+       //end timed commands
+        usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Bandwidth: %f MHz...") % (usrp->get_rx_bandwidth() / 1e6) << std::endl
 		          << std::endl;
 		std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % (bw / 1e6) << std::endl;
-		tx_usrp->set_tx_bandwidth(bw, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        tx_usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numTxChannels; i++){
+		    tx_usrp->set_tx_bandwidth(bw, i);
+        }
+       //end timed commands
+        tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % (tx_usrp->get_tx_bandwidth() / 1e6) << std::endl
 		          << std::endl;
 	}
 
 	// set the antenna
 	if (vm.count("ant")) {
-		usrp->set_rx_antenna(ant, chan);
-		tx_usrp->set_tx_antenna(ant, chan);
+        //we will tune the frontends in 200ms from now
+        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numRxChannels; i++){
+		    usrp->set_rx_antenna(ant, i);
+        }
+       //end timed commands
+        usrp->clear_command_time();
+        //we will tune the frontends in 200ms from now
+        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+        //sets command time on all devices
+        tx_usrp->set_command_time(cmd_time);
+        for(size_t i = 0; i < numTxChannels; i++){
+		    tx_usrp->set_tx_antenna(ant, i);
+        }
+       //end timed commands
+        tx_usrp->clear_command_time();
 	}
 
 	boost::this_thread::sleep(boost::posix_time::seconds{static_cast<long>(setup_time)});  // allow for some setup time

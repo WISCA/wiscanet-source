@@ -36,7 +36,7 @@ classdef local_usrp
             local_usrp_mex('write', tbuf, start_time);
         end
         %===========================================================
-        function [rxWav, rxWavComplex] = rx_usrp(this,start_time, num_channels)
+        function rxWav = rx_usrp(this,start_time, num_channels)
 
             fprintf('local_usrp: rx_usrp(), start_time = %f\n', start_time);
             % setup
