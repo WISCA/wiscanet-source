@@ -21,6 +21,8 @@ typedef struct cfgData_s {
 	double rxgain;
 	double bw;
     char devAddr[128];
+    char channels[128];
+    char antennas[128];
 } cfgData_t;
 
 int sysCfgParse(char *xmlFn, char *serverIp, int *serverPort);

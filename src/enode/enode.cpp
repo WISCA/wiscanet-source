@@ -182,15 +182,15 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 #ifdef SUDO_MODE
 		sprintf(
 		    cbuf,
-		    "sudo ./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
+		    "sudo ./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f --channels %s --ant %s &> ../conlog/usrpLog", cfg.devAddr,
 		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
-		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
+		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw, cfg.channels, cfg.antennas);
 #else
 		sprintf(
 		    cbuf,
-		    "./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f &> ../conlog/usrpLog", cfg.devAddr,
+		    "./uControl --args %s --opmode %s --macmode %s --tslot %d --nsamps %d --rate %f --subdev %s --freq %f --txgain %f --rxgain %f --bw %f --channels %s --ant %s &> ../conlog/usrpLog", cfg.devAddr,
 		    (cfg.opMode == OPMODE_TX_RX) ? "TX/RX" : (cfg.opMode == OPMODE_RX) ? "RX" : "TX", cfg.macMode, cfg.tSlot,
-		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw);
+		    cfg.nsamps, cfg.rate, cfg.subdev, cfg.freq, cfg.txgain, cfg.rxgain, cfg.bw, cfg.channels, cfg.antennas);
 #endif
 		cout << "\n\n\n=====================================================\n";
 		cout << " [enode] start of USRP Control\n";

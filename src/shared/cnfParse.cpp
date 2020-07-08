@@ -189,6 +189,22 @@ int usrCfgParse(char* xmlFn, cfgData_t* cfg) {
 	assert(usrElement);
 	strcpy(cfg->devAddr, usrElement->GetText());
 	printf("Device Address = %s\n", cfg->devAddr);
+    
+    // Channel Configuration
+	usrConfig = usrConfig->NextSibling();
+	assert(usrConfig);
+	usrElement = usrConfig->ToElement();
+	assert(usrElement);
+	strcpy(cfg->channels, usrElement->GetText());
+	printf("Channel Spec = %s\n", cfg->channels);
+    
+    // Channel Configuration
+	usrConfig = usrConfig->NextSibling();
+	assert(usrConfig);
+	usrElement = usrConfig->ToElement();
+	assert(usrElement);
+	strcpy(cfg->antennas, usrElement->GetText());
+	printf("Antenna Spec = %s\n", cfg->antennas);
 
 	printf("=====================================================\n");
 
