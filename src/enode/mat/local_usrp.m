@@ -20,8 +20,7 @@ classdef local_usrp
     methods
         %=================================================================
         %===========================================================
-        function this = set_usrp(this,type, ant, subdev, ref, wirefmt, num_samps, ...
-                sample_rate, freq, rx_gain, tx_gain, bw, setup_time)
+        function this = set_usrp(this,num_samps)
             fprintf('Connecting to local host, txport 9940\n');
             local_usrp_mex('txinit', '127.0.0.1', 9940);
             fprintf('Connecting to local host, rxport 9944, 9945\n');
@@ -36,7 +35,7 @@ classdef local_usrp
             local_usrp_mex('write', tbuf, start_time);
         end
         %===========================================================
-        function rxWav = rx_usrp(this,start_time, num_channels)
+        function rx_buff = rx_usrp(this,start_time)
 
             fprintf('local_usrp: rx_usrp(), start_time = %f\n', start_time);
             % setup
@@ -49,14 +48,21 @@ classdef local_usrp
             % local_usrp_mex('rcon', start_time);
 
             %fprintf('rx_usrp(), start_time: %f, len=%f\n', start_time, rx_comp_unit);
-            [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time,num_channels);
-            rxdat = rdat;
+            [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time);
+            rxdat = transpose(rdat);
+            %             totalRx = len;
 
-            rxBuff = double(rxdat) / 2^15;
-            
-            rxWavComplex = complex(rxBuff(1:2:end),rxBuff(2:2:end));
-            
-            rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
+            %             if(len > 0)
+            %                 while(1)
+            %                     [len, rdat] = local_usrp_mex('read', rx_short_unit);
+            %                     if(len == 0) break; end
+            %                     totalRx = totalRx + len;
+            %                     rxdat = [rxdat transpose(rdat)];
+            %                 end
+            %             end
+
+
+            rx_buff = double(rxdat) / 2^15;
 
            fprintf('local_usrp: read packet %d complex samples at time %f\n', len, start_time);
             %fprintf('R');
