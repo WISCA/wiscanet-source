@@ -20,7 +20,8 @@ classdef local_usrp
     methods
         %=================================================================
         %===========================================================
-        function this = set_usrp(this,num_samps)
+        function this = set_usrp(this,type, ant, subdev, ref, wirefmt, num_samps, ...
+                sample_rate, freq, rx_gain, tx_gain, bw, setup_time)
             fprintf('Connecting to local host, txport 9940\n');
             local_usrp_mex('txinit', '127.0.0.1', 9940);
             fprintf('Connecting to local host, rxport 9944, 9945\n');
@@ -29,14 +30,19 @@ classdef local_usrp
         end
 
         %===========================================================
-        function tx_usrp(this,start_time, tx_buff)
-            tbuf = single(transpose(tx_buff));
+        function tx_usrp(this,start_time, buff_in, num_channels)
+            % This expects a num_samps x num_channels complex double matrix
+            flatBuff = reshape(buff_in,1,[]);
+            txbuff = zeros(2*this.request_num_samps, 1);
+            txbuff(1:2:2*length(buff_in)) = real(flatBuff);
+            txbuff(2:2:2*length(buff_in)) = imag(flatBuff);
+            tbuf = single(txbuff);
             fprintf('tx_usrp(), start_time: %f, len=%d\n', start_time, length(tbuf));
-            local_usrp_mex('write', tbuf, start_time);
+            local_usrp_mex('write', tbuf, start_time, num_channels);
         end
         %===========================================================
-        function rx_buff = rx_usrp(this,start_time)
-
+        function rxWav = rx_usrp(this,start_time, num_channels)
+            % This returns a num_samps x num_channels complex double matrix
             fprintf('local_usrp: rx_usrp(), start_time = %f\n', start_time);
             % setup
             rx_comp_unit =  this.request_num_samps;
@@ -48,21 +54,14 @@ classdef local_usrp
             % local_usrp_mex('rcon', start_time);
 
             %fprintf('rx_usrp(), start_time: %f, len=%f\n', start_time, rx_comp_unit);
-            [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time);
-            rxdat = transpose(rdat);
-            %             totalRx = len;
+            [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time,num_channels);
+            rxdat = rdat;
 
-            %             if(len > 0)
-            %                 while(1)
-            %                     [len, rdat] = local_usrp_mex('read', rx_short_unit);
-            %                     if(len == 0) break; end
-            %                     totalRx = totalRx + len;
-            %                     rxdat = [rxdat transpose(rdat)];
-            %                 end
-            %             end
-
-
-            rx_buff = double(rxdat) / 2^15;
+            rxBuff = double(rxdat) / 2^15;
+            
+            rxWavComplex = complex(rxBuff(1:2:end),rxBuff(2:2:end));
+            
+            rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
 
            fprintf('local_usrp: read packet %d complex samples at time %f\n', len, start_time);
             %fprintf('R');
