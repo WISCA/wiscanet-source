@@ -109,47 +109,49 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	size_t rxUnit;
 	uint16_t numChannels;
 
-	rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-	if (rResult < 0) {
-		printf("Receiving command buffer failed (Error %d)\r\n", rResult);
-	}
-	rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-	if (rResult < 0) {
-		printf("Receiving number of channels failed (Error %d)\r\n", rResult);
-	}
-	rxTime = uhd::time_spec_t(*stime);
-	time_now = usrp->get_time_now(0);
-	realRxTime = rxTime.get_real_secs();
-	realNowTime = time_now.get_real_secs();
-	printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime,
-	       numChannels);
-
-	if (realRxTime < realNowTime) {
-		printf("[USRP Control] Error: RX time has already passed\n");
-		exit(1);
-	}
-
-	timeout = realRxTime - realNowTime + 0.1;
-
-	// create a receive streamer
-	uhd::stream_args_t stream_args(cpu_format, wire_format);
-	stream_args.channels = channel_nums;
-	uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
-
-	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-	stream_cmd.num_samps = num_requested_samples * channel_nums.size();
-
-	printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(), usrp->get_rx_num_channels());
-
-	rxUnit = rx_stream->get_max_num_samps();
-	// allocate buffers to receive with samples (one buffer per channel)
-	printf("[USRP Control] Allocating %ld buffers of %llu samples each\r\n", channel_nums.size(),
-	       num_requested_samples);
-	std::vector<std::vector<samp_type>> rx_buffers(channel_nums.size(), std::vector<samp_type>(num_requested_samples));
-
-	rxUnit = num_requested_samples;
-
 	while (1) {
+		rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+		if (rResult < 0) {
+			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
+		}
+		rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+		if (rResult < 0) {
+			printf("Receiving number of channels failed (Error %d)\r\n", rResult);
+		}
+		rxTime = uhd::time_spec_t(*stime);
+		time_now = usrp->get_time_now(0);
+		realRxTime = rxTime.get_real_secs();
+		realNowTime = time_now.get_real_secs();
+		printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime,
+		       numChannels);
+
+		if (realRxTime < realNowTime) {
+			printf("[USRP Control] Error: RX time has already passed\n");
+			exit(1);
+		}
+
+		timeout = realRxTime - realNowTime + 0.1;
+
+		// create a receive streamer
+		uhd::stream_args_t stream_args(cpu_format, wire_format);
+		stream_args.channels = channel_nums;
+		uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
+
+		uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
+		stream_cmd.num_samps = num_requested_samples * channel_nums.size();
+
+		printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(),
+		       usrp->get_rx_num_channels());
+
+		rxUnit = rx_stream->get_max_num_samps();
+		// allocate buffers to receive with samples (one buffer per channel)
+		printf("[USRP Control] Allocating %ld buffers of %llu samples each\r\n", channel_nums.size(),
+		       num_requested_samples);
+		std::vector<std::vector<samp_type>> rx_buffers(channel_nums.size(),
+		                                               std::vector<samp_type>(num_requested_samples));
+
+		rxUnit = num_requested_samples;
+
 		// rx streamer cmd
 		num_total_samps = 0;
 		stream_cmd.stream_now = false;
@@ -218,9 +220,9 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		// send rx packet to matlab through udp socket
 		for (int i = 0; i < numChannels; i++) {
 			size_t txSamps = num_total_samps;
-
+			printf("[USRP Control] Sending channel %d\r\n", i);
 			//		size_t count=0, txTotal=0, txUnit=1000, txLen=0, txResult=0;
-			count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
+			count = 0, txTotal = 0, txUnit = 2000, txLen = 0, txResult = 0;
 
 			while (txTotal < txSamps) {
 				if ((txSamps - txTotal) > txUnit)
@@ -242,24 +244,6 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		// printf("-- RX : zero size packet\n");
 
 		printf("[USRP Control] Sent at time=%f, len=%ld (samples) \r\n", time_now.get_real_secs(), txTotal);
-
-		// wait RX control command
-		rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-		if (rResult < 0) {
-			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
-		}
-		rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-		if (rResult < 0) {
-			printf("Receiving number of channels failed (Error %d)\r\n", rResult);
-		}
-		rxTime = uhd::time_spec_t(*stime);
-		time_now = usrp->get_time_now(0);
-		realRxTime = rxTime.get_real_secs();
-		realNowTime = time_now.get_real_secs();
-
-		printf("rx ctrl cmd rxTime=%f, time_now =%f\n", realRxTime, realNowTime);
-
-		timeout = realRxTime - realNowTime + 0.1;
 	}
 }
 

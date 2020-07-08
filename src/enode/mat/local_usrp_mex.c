@@ -104,8 +104,7 @@ int recvPacket(char *buf, int len) {
     int retval, slen;
 
     unsigned int buf_pos = 0;
-
-    unsigned int rxunit = 4000 * 4;
+    unsigned int rxunit = 4000 * 2;
         while (1) {
             unsigned int readlen = len - buf_pos;
 
