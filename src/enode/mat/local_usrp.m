@@ -33,10 +33,11 @@ classdef local_usrp
         function tx_usrp(this,start_time, buff_in, num_channels)
             % This expects a num_samps x num_channels complex double matrix
             flatBuff = reshape(buff_in,1,[]);
-            txbuff = zeros(2*this.request_num_samps, 1);
-            txbuff(1:2:2*length(buff_in)) = real(flatBuff);
-            txbuff(2:2:2*length(buff_in)) = imag(flatBuff);
-            tbuf = single(txbuff);
+            total_samples = 2*this.request_num_samps*num_channels;
+            txbuff = zeros(total_samples, 1);
+            txbuff(1:2:total_samples) = real(flatBuff);
+            txbuff(2:2:total_samples) = imag(flatBuff);
+            tbuf = single(transpose(txbuff));
             fprintf('tx_usrp(), start_time: %f, len=%d\n', start_time, length(tbuf));
             local_usrp_mex('write', tbuf, start_time, num_channels);
         end

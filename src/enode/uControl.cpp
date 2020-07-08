@@ -560,11 +560,11 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 
 	// create a transmit streamer
 	uhd::stream_args_t stream_args("fc32", "sc16");
+	stream_args.channels = channel_nums;
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-	std::vector<std::complex<float>> buff(total_num_samps + 1000);  // 1000 for control information
-
+	std::vector<std::complex<float>> buff(total_num_samps*channel_nums.size() + 1000);  // 1000 for control information
 	char *udpBuf;
 	size_t rResult;
 	double *start_time;
@@ -572,7 +572,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	size_t txUnit = tx_stream->get_max_num_samps();
 	size_t txLen;
 	size_t rSamLen;
-    uint16_t *numChans;
+    size_t *numChans;
 	while (1) {
 		udpBuf = (char *)&buff[0];
 		rLen = 0;
@@ -583,12 +583,12 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 			rLen += rResult;
 			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 		} while (rResult > 0);
-		rSamLen = rLen / sizeof(std::complex<float>);
+		rSamLen = (rLen - sizeof(size_t)) / sizeof(std::complex<float>);
 
 		time_now = usrp->get_time_now(0);
 		start_time = (double *)(&buff[0] + rSamLen - 1);
-        numChans = (uint16_t *)(&buff[0] + rSamLen + sizeof(double) - 1);
-		printf("TX: rx %ld byte (%ld samples) from MATLAB, numChans = %d\n", rLen, rSamLen, numChans);
+        numChans = (size_t *)(&buff[0] + rSamLen);
+		printf("TX: rx %ld byte (%ld samples) from MATLAB for nChans = %ld\n", rLen, rSamLen, *numChans);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
@@ -607,10 +607,21 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		md.has_time_spec = true;
 		md.time_spec = txTime;
 
+	    std::vector<std::vector<std::complex<float>>> tx_buffers(channel_nums.size(), std::vector<std::complex<float>>(total_num_samps));
+
+        for(size_t i = 0; i < *numChans; i++){
+            tx_buffers[i].assign(buff.begin() + (i*total_num_samps), buff.begin() + ((i+1)*total_num_samps));
+        }
+
+		// create a vector of pointers to point to each of the channel buffers
+		std::vector<std::complex<float>*> buff_ptrs;
+		for (size_t i = 0; i < tx_buffers.size(); i++) {
+			buff_ptrs.push_back(&tx_buffers[i].front());
+		}
 		// send the contents of tx buffer
 		timeout = txTime.get_real_secs() - time_now.get_real_secs() + 0.1;
 
-		txLen = tx_stream->send(&buff.front(), total_num_samps, md, timeout);
+		txLen = tx_stream->send(buff_ptrs, total_num_samps, md, timeout);
 		if (txLen < total_num_samps) {
 			printf("tx error actual_tx_len = %ld, request_len = %ld\n", txLen, total_num_samps);
 			exit(1);

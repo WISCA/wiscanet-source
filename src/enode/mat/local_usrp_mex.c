@@ -62,7 +62,7 @@ void rxInit(char *ipaddr, int portNum, int cportNum) {
     }
 }
 
-void sendPacket(double start_time, char *buf, int len, uint16_t numChans) {
+void sendPacket(double start_time, char *buf, int len, size_t numChans) {
     int totalTx = 0, txLen, txUnit = 4095, txResult = -1;
     struct timespec spec;
     double ctime;
@@ -79,7 +79,7 @@ void sendPacket(double start_time, char *buf, int len, uint16_t numChans) {
     }
     sendto(txSockfd, (char *)&start_time, sizeof(double), 0, (struct sockaddr *)&si_other, sizeof(si_other));
     totalTx += sizeof(double);
-    sendto(txSockfd, &numChans, sizeof(uint16_t), 0, (struct sockaddr *)&si_other, sizeof(si_other));
+    sendto(txSockfd, &numChans, sizeof(numChans), 0, (struct sockaddr *)&si_other, sizeof(si_other));
     totalTx += sizeof(uint16_t);
     sendto(txSockfd, buf, 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
 
@@ -91,7 +91,7 @@ void sendPacket(double start_time, char *buf, int len, uint16_t numChans) {
         usleep(stime);
     }
 
-    mexPrintf("TX %d bytes\n", totalTx);
+    mexPrintf("TX %d bytes for %d channels\n", totalTx, numChans);
 }
 
 void controlRecv(double start_time, uint16_t numChans) {
@@ -187,7 +187,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         len = dim_array[2] * sizeof(float);
         sBuf = (short *)mxGetData(prhs[1]);
         start_time = mxGetScalar(prhs[2]);
-        uint16_t numChans = mxGetScalar(prhs[3]);
+        size_t numChans = mxGetScalar(prhs[3]);
         mexPrintf("Write operation at %f, numChannels = %d\n", start_time, numChans);
         sendPacket(start_time, (char *)sBuf, len, numChans);
     } else if (!strcmp("read", cmd)) {
