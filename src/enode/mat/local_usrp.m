@@ -40,7 +40,7 @@ classdef local_usrp
             tbuf = single(transpose(txbuff));
             fprintf('[Local USRP] Transmitting at %f, %d bytes (%d samples)\n', start_time, length(tbuf), total_samples);
             local_usrp_mex('write', tbuf, start_time, num_channels);
-            fprintf('[Local USRP] Finished transmitting');
+            fprintf('[Local USRP] Finished transmitting\n');
         end
         %===========================================================
         function rxWav = rx_usrp(this,start_time, num_channels)

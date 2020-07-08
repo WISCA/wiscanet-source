@@ -107,13 +107,13 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	double timeout;
 	size_t rxLoc;
 	size_t rxUnit;
-    uint16_t numChannels;
+	uint16_t numChannels;
 
 	rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 	if (rResult < 0) {
 		printf("Receiving command buffer failed (Error %d)\r\n", rResult);
 	}
-    rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr*)&si_me, (socklen_t *)&slen);
+	rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 	if (rResult < 0) {
 		printf("Receiving number of channels failed (Error %d)\r\n", rResult);
 	}
@@ -121,7 +121,8 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	time_now = usrp->get_time_now(0);
 	realRxTime = rxTime.get_real_secs();
 	realNowTime = time_now.get_real_secs();
-	printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime, numChannels);
+	printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime,
+	       numChannels);
 
 	if (realRxTime < realNowTime) {
 		printf("[USRP Control] Error: RX time has already passed\n");
@@ -136,7 +137,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
 	uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-	stream_cmd.num_samps = num_requested_samples*channel_nums.size();
+	stream_cmd.num_samps = num_requested_samples * channel_nums.size();
 
 	printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(), usrp->get_rx_num_channels());
 
@@ -154,11 +155,11 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		stream_cmd.stream_now = false;
 		stream_cmd.stream_mode = uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE;
 		stream_cmd.time_spec = rxTime;
-		//Tells all channels to stream
-        rx_stream->issue_stream_cmd(stream_cmd);
+		// Tells all channels to stream
+		rx_stream->issue_stream_cmd(stream_cmd);
 
 		// create a vector of pointers to point to each of the channel buffers
-		std::vector<samp_type*> buff_ptrs;
+		std::vector<samp_type *> buff_ptrs;
 		for (size_t i = 0; i < rx_buffers.size(); i++) {
 			buff_ptrs.push_back(&rx_buffers[i].front());
 		}
@@ -199,7 +200,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 				if (it == mapSizes.end()) mapSizes[num_rx_samps] = 0;
 				mapSizes[num_rx_samps] += 1;
 			}
-            printf("[USRP Control] Device RX Loop: %lu samples\r\n",num_rx_samps);
+			printf("[USRP Control] Device RX Loop: %lu samples\r\n", num_rx_samps);
 			num_total_samps += num_rx_samps;
 		}
 
@@ -215,27 +216,27 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 
 		size_t count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
 		// send rx packet to matlab through udp socket
-        for(int i = 0; i < numChannels; i++){
-		size_t txSamps = num_total_samps;
+		for (int i = 0; i < numChannels; i++) {
+			size_t txSamps = num_total_samps;
 
-		//		size_t count=0, txTotal=0, txUnit=1000, txLen=0, txResult=0;
-		count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
+			//		size_t count=0, txTotal=0, txUnit=1000, txLen=0, txResult=0;
+			count = 0, txTotal = 0, txUnit = 4000, txLen = 0, txResult = 0;
 
-		while (txTotal < txSamps) {
-			if ((txSamps - txTotal) > txUnit)
-				txLen = txUnit;
-			else
-				txLen = txSamps - txTotal;
-			txResult = sendto(sockfd, (&rx_buffers[i].front() + (txUnit * count)), txLen * sizeof(samp_type), 0,
-			                  (struct sockaddr *)&si_other, sizeof(si_other));
-			if (txResult < 0) break;
-			count++;
-			txTotal += (txResult / sizeof(samp_type));
-			usleep(20);  // intentional delay for proper context switching
+			while (txTotal < txSamps) {
+				if ((txSamps - txTotal) > txUnit)
+					txLen = txUnit;
+				else
+					txLen = txSamps - txTotal;
+				txResult = sendto(sockfd, (&rx_buffers[i].front() + (txUnit * count)), txLen * sizeof(samp_type), 0,
+				                  (struct sockaddr *)&si_other, sizeof(si_other));
+				if (txResult < 0) break;
+				count++;
+				txTotal += (txResult / sizeof(samp_type));
+				usleep(20);  // intentional delay for proper context switching
+				             // printf("-- RX : txTotal = %d samps\n", txTotal);
+			}
 			// printf("-- RX : txTotal = %d samps\n", txTotal);
 		}
-		// printf("-- RX : txTotal = %d samps\n", txTotal);
-        }
 		// send zero size termination packet
 		sendto(sockfd, &rx_buffers[0].front(), 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
 		// printf("-- RX : zero size packet\n");
@@ -244,13 +245,13 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 
 		// wait RX control command
 		rResult = recvfrom(sockfd, cmdBuf, 1024, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
-	    if (rResult < 0) {
-		    printf("Receiving command buffer failed (Error %d)\r\n", rResult);
-	    }
-        rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr*)&si_me, (socklen_t *)&slen);
-	    if (rResult < 0) {
-		    printf("Receiving number of channels failed (Error %d)\r\n", rResult);
-	    }
+		if (rResult < 0) {
+			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
+		}
+		rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+		if (rResult < 0) {
+			printf("Receiving number of channels failed (Error %d)\r\n", rResult);
+		}
 		rxTime = uhd::time_spec_t(*stime);
 		time_now = usrp->get_time_now(0);
 		realRxTime = rxTime.get_real_secs();
@@ -535,7 +536,8 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	return 0;
 }
 
-void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, size_t tslot,std::vector<size_t> channel_nums) {
+void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, size_t tslot,
+                          std::vector<size_t> channel_nums) {
 	std::cout << "================== TX UMAC worker =================\n";
 
 	// variables for timer
@@ -564,7 +566,8 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-	std::vector<std::complex<float>> buff(total_num_samps*channel_nums.size() + 1000);  // 1000 for control information
+	std::vector<std::complex<float>> buff(total_num_samps * channel_nums.size() + 1000);  // 1000 for control
+	                                                                                      // information
 	char *udpBuf;
 	size_t rResult;
 	double *start_time;
@@ -572,7 +575,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	size_t txUnit = tx_stream->get_max_num_samps();
 	size_t txLen;
 	size_t rSamLen;
-    size_t *numChans;
+	size_t *numChans;
 	while (1) {
 		udpBuf = (char *)&buff[0];
 		rLen = 0;
@@ -587,8 +590,9 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 
 		time_now = usrp->get_time_now(0);
 		start_time = (double *)(&buff[0] + rSamLen - 1);
-        numChans = (size_t *)(&buff[0] + rSamLen);
-		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels\n", rLen, rSamLen, *numChans);
+		numChans = (size_t *)(&buff[0] + rSamLen);
+		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels\n", rLen, rSamLen,
+		       *numChans);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
@@ -607,14 +611,15 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		md.has_time_spec = true;
 		md.time_spec = txTime;
 
-	    std::vector<std::vector<std::complex<float>>> tx_buffers(channel_nums.size(), std::vector<std::complex<float>>(total_num_samps));
+		std::vector<std::vector<std::complex<float>>> tx_buffers(channel_nums.size(),
+		                                                         std::vector<std::complex<float>>(total_num_samps));
 
-        for(size_t i = 0; i < *numChans; i++){
-            tx_buffers[i].assign(buff.begin() + (i*total_num_samps), buff.begin() + ((i+1)*total_num_samps));
-        }
+		for (size_t i = 0; i < *numChans; i++) {
+			tx_buffers[i].assign(buff.begin() + (i * total_num_samps), buff.begin() + ((i + 1) * total_num_samps));
+		}
 
 		// create a vector of pointers to point to each of the channel buffers
-		std::vector<std::complex<float>*> buff_ptrs;
+		std::vector<std::complex<float> *> buff_ptrs;
 		for (size_t i = 0; i < tx_buffers.size(); i++) {
 			buff_ptrs.push_back(&tx_buffers[i].front());
 		}
@@ -626,7 +631,8 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 			printf("tx error actual_tx_len = %ld, request_len = %ld\n", txLen, total_num_samps);
 			exit(1);
 		}
-		printf("[USRP Control] Transmit: assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(), time_now.get_real_secs());
+		printf("[USRP Control] Transmit: assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(),
+		       time_now.get_real_secs());
 		// printf("txBufLoc = %d, txLen = %d\n", txBufLoc, txLen);
 
 		// send a mini EOB packet
@@ -834,36 +840,36 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		} else
 			channel_nums.push_back(std::stoi(channel_strings[ch]));
 	}
-    size_t numRxChannels = usrp->get_rx_num_channels();
-    size_t numTxChannels = tx_usrp->get_tx_num_channels();
+	size_t numRxChannels = usrp->get_rx_num_channels();
+	size_t numTxChannels = tx_usrp->get_tx_num_channels();
 	uhd::time_spec_t cmd_time;
-    // set the center frequency
+	// set the center frequency
 	if (vm.count("freq")) {  // with default of 0.0 this will always be true
 		std::cout << boost::format("Setting RX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tune_request(freq);
 		if (vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
-        //we will tune the frontends in 200ms from now
-        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numRxChannels; i++){
-		    usrp->set_rx_freq(tune_request, i);
-        }
-       //end timed commands
-        usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numRxChannels; i++) {
+			usrp->set_rx_freq(tune_request, i);
+		}
+		// end timed commands
+		usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Freq: %f MHz...") % (usrp->get_rx_freq() / 1e6) << std::endl << std::endl;
 		std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tx_tune_request(freq);
 		if (vm.count("int-n")) tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
-        //we will tune the frontends in 200ms from now
-        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        tx_usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numTxChannels; i++){
-		    tx_usrp->set_tx_freq(tune_request, i);
-        }
-       //end timed commands
-        tx_usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		tx_usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numTxChannels; i++) {
+			tx_usrp->set_tx_freq(tune_request, i);
+		}
+		// end timed commands
+		tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Freq: %f MHz...") % (tx_usrp->get_tx_freq() / 1e6) << std::endl
 		          << std::endl;
 	}
@@ -871,79 +877,79 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	// set the rf gain
 	if (vm.count("rxgain")) {
 		std::cout << boost::format("Setting RX Gain: %f dB...") % rxgain << std::endl;
-        //we will tune the frontends in 200ms from now
-        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numRxChannels; i++){
-		    usrp->set_rx_gain(rxgain,i);
-        }
-       //end timed commands
-        usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numRxChannels; i++) {
+			usrp->set_rx_gain(rxgain, i);
+		}
+		// end timed commands
+		usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Gain: %f dB...") % usrp->get_rx_gain() << std::endl << std::endl;
 	}
 	if (vm.count("txgain")) {
 		std::cout << boost::format("Setting TX Gain: %f dB...") % txgain << std::endl;
-        //we will tune the frontends in 200ms from now
-        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        tx_usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numTxChannels; i++){
-		    tx_usrp->set_tx_gain(txgain, i);
-        }
-       //end timed commands
-        tx_usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		tx_usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numTxChannels; i++) {
+			tx_usrp->set_tx_gain(txgain, i);
+		}
+		// end timed commands
+		tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Gain: %f dB...") % tx_usrp->get_tx_gain() << std::endl << std::endl;
 	}
 
 	// set the IF filter bandwidth
 	if (vm.count("bw")) {
 		std::cout << boost::format("Setting RX Bandwidth: %f MHz...") % (bw / 1e6) << std::endl;
-        //we will tune the frontends in 200ms from now
-        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numRxChannels; i++){
-		    usrp->set_rx_bandwidth(bw, i);
-        }
-       //end timed commands
-        usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numRxChannels; i++) {
+			usrp->set_rx_bandwidth(bw, i);
+		}
+		// end timed commands
+		usrp->clear_command_time();
 		std::cout << boost::format("Actual RX Bandwidth: %f MHz...") % (usrp->get_rx_bandwidth() / 1e6) << std::endl
 		          << std::endl;
 		std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % (bw / 1e6) << std::endl;
-        //we will tune the frontends in 200ms from now
-        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        tx_usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numTxChannels; i++){
-		    tx_usrp->set_tx_bandwidth(bw, i);
-        }
-       //end timed commands
-        tx_usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		tx_usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numTxChannels; i++) {
+			tx_usrp->set_tx_bandwidth(bw, i);
+		}
+		// end timed commands
+		tx_usrp->clear_command_time();
 		std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % (tx_usrp->get_tx_bandwidth() / 1e6) << std::endl
 		          << std::endl;
 	}
 
 	// set the antenna
 	if (vm.count("ant")) {
-        //we will tune the frontends in 200ms from now
-        cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numRxChannels; i++){
-		    usrp->set_rx_antenna(ant, i);
-        }
-       //end timed commands
-        usrp->clear_command_time();
-        //we will tune the frontends in 200ms from now
-        cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
-        //sets command time on all devices
-        tx_usrp->set_command_time(cmd_time);
-        for(size_t i = 0; i < numTxChannels; i++){
-		    tx_usrp->set_tx_antenna(ant, i);
-        }
-       //end timed commands
-        tx_usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numRxChannels; i++) {
+			usrp->set_rx_antenna(ant, i);
+		}
+		// end timed commands
+		usrp->clear_command_time();
+		// we will tune the frontends in 200ms from now
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
+		// sets command time on all devices
+		tx_usrp->set_command_time(cmd_time);
+		for (size_t i = 0; i < numTxChannels; i++) {
+			tx_usrp->set_tx_antenna(ant, i);
+		}
+		// end timed commands
+		tx_usrp->clear_command_time();
 	}
 
 	boost::this_thread::sleep(boost::posix_time::seconds{static_cast<long>(setup_time)});  // allow for some setup time
@@ -983,7 +989,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		if (macmode == "TDMA") {
 			transmit_thread.create_thread(boost::bind(&transmit_TDMA_worker, tx_usrp, total_num_samps, tslot));
 		} else if (macmode == "UMAC") {
-			transmit_thread.create_thread(boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot,channel_nums));
+			transmit_thread.create_thread(
+			    boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot, channel_nums));
 		} else {
 			printf("unknown macmode = %s\n", macmode.c_str());
 			exit(1);
