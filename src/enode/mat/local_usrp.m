@@ -22,9 +22,9 @@ classdef local_usrp
         %===========================================================
         function this = set_usrp(this,type, ant, subdev, ref, wirefmt, num_samps, ...
                 sample_rate, freq, rx_gain, tx_gain, bw, setup_time)
-            fprintf('Connecting to local host, txport 9940\n');
+            fprintf('Connecting Transmit Controller (Port: 9940)\n');
             local_usrp_mex('txinit', '127.0.0.1', 9940);
-            fprintf('Connecting to local host, rxport 9944, 9945\n');
+            fprintf('Connecting Recieve Controller (Ports: 9944, 9945)\n');
             local_usrp_mex('rxinit', '127.0.0.1', 9944, 9945);
             this.request_num_samps = num_samps;
         end
@@ -38,13 +38,14 @@ classdef local_usrp
             txbuff(1:2:total_samples) = real(flatBuff);
             txbuff(2:2:total_samples) = imag(flatBuff);
             tbuf = single(transpose(txbuff));
-            fprintf('tx_usrp(), start_time: %f, len=%d\n', start_time, length(tbuf));
+            fprintf('[Local USRP] Transmitting at %f, %d bytes (%d samples)\n', start_time, length(tbuf), total_samples);
             local_usrp_mex('write', tbuf, start_time, num_channels);
+            fprintf('[Local USRP] Finished transmitting');
         end
         %===========================================================
         function rxWav = rx_usrp(this,start_time, num_channels)
             % This returns a num_samps x num_channels complex double matrix
-            fprintf('local_usrp: rx_usrp(), start_time = %f\n', start_time);
+            fprintf('[Local USRP] Receiving at %f for %d channels\n', start_time, num_channels);
             % setup
             rx_comp_unit =  this.request_num_samps;
             %rx_comp_unit = this.request_num_samps;
@@ -59,12 +60,9 @@ classdef local_usrp
             rxdat = rdat;
 
             rxBuff = double(rxdat) / 2^15;
-            
             rxWavComplex = complex(rxBuff(1:2:end),rxBuff(2:2:end));
-            
             rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
-
-           fprintf('local_usrp: read packet %d complex samples at time %f\n', len, start_time);
+            fprintf('[Local USRP] Finished reciving %d complex samples at time %f\n', len/2, start_time);
             %fprintf('R');
 
         end
@@ -72,8 +70,9 @@ classdef local_usrp
         %===========================================================
         function terminate_usrp(this)
             pause(1);
-            fprintf('Close all resources for USRP control\n');
             local_usrp_mex('close');
+            pause(1);
+            fprintf('Connections have been shutdown.\n');
         end
 
     end

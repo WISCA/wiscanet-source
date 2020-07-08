@@ -91,7 +91,7 @@ void sendPacket(double start_time, char *buf, int len, size_t numChans) {
         usleep(stime);
     }
 
-    mexPrintf("TX %d bytes for %d channels\n", totalTx, numChans);
+    mexPrintf("[Local USRP Mex] Sent %d bytes for %d channels, at %f\n", totalTx, numChans, start_time);
 }
 
 void controlRecv(double start_time, uint16_t numChans) {
@@ -113,11 +113,11 @@ int recvPacket(char *buf, int len) {
                 retval = recvfrom(rxSockfd, (buf + buf_pos), rxunit, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 
                 if (retval == 0) {
-                    mexPrintf("Complete one receiving cycle\n");
+                    mexPrintf("[Local USRP Mex] Completed one receiving cycle\n");
                 }
                 if (retval < 0) {
                     perror("recvfrom() or recv()");
-                    mexPrintf("error on receiving\n");
+                    mexPrintf("[Local USRP Mex] Receive error: %d\n", retval);
                     break;
                 }
             }
@@ -127,7 +127,6 @@ int recvPacket(char *buf, int len) {
 
             if (buf_pos >= len) break;
         }
-
     return buf_pos;
 }
 
@@ -144,14 +143,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     double start_time;
 
     if (nrhs < 1) {
-        mexPrintf("need more input arguments\n");
+        mexPrintf("[Local USRP Mex] Need more input arguments\n");
         return;
     }
 
     mxGetString(prhs[0], cmd, CBLEN);
 
     if (!strcmp("txinit", cmd)) {
-        mexPrintf("Init TX operation\n");
+        mexPrintf("[Local USRP Mex] Initializing Transmit operation\n");
         mxGetString(prhs[1], ipaddr, CBLEN);
         portNum = mxGetScalar(prhs[2]);
         mexPrintf("%s\n", ipaddr);
@@ -164,7 +163,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         plhs[0] = mxCreateDoubleScalar(txSockfd);
         nlhs = 1;
     } else if (!strcmp("rxinit", cmd)) {
-        mexPrintf("Init RX operation\n");
+        mexPrintf("[Local USRP Mex] Initializing Receive operation\n");
         mxGetString(prhs[1], ipaddr, CBLEN);
         portNum = mxGetScalar(prhs[2]);
         cportNum = mxGetScalar(prhs[3]);
@@ -188,7 +187,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         sBuf = (short *)mxGetData(prhs[1]);
         start_time = mxGetScalar(prhs[2]);
         size_t numChans = mxGetScalar(prhs[3]);
-        mexPrintf("Write operation at %f, numChannels = %d\n", start_time, numChans);
+        mexPrintf("[Local USRP Mex] Sending data to USRP Control for transmission at %f,for %d channels\n", start_time, numChans);
         sendPacket(start_time, (char *)sBuf, len, numChans);
     } else if (!strcmp("read", cmd)) {
         if (rxCnSockfd <= 0) {
@@ -205,7 +204,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
         start_time = mxGetScalar(prhs[2]);
         uint16_t numChans = mxGetScalar(prhs[3]);
-        mexPrintf("local_usrp_mex: read control operation : start_time = %f and numChans = %d\r\n", start_time, numChans);
+        mexPrintf("[Local USRP Mex] Initializing USRP Control Read at %f, for %d channels\n", start_time, numChans);
 
         dims[0] = len*numChans;
         plhs[1] = mxCreateNumericArray(1, dims, mxINT16_CLASS, mxREAL);
@@ -213,13 +212,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
         controlRecv(start_time, numChans);
         n = recvPacket((char *)sBuf, numChans * len * sizeof(short));
-
-        /*		mexPrintf("local_usrp_mex: read samps, n=%d \n", n/sizeof(short)/2);*/
-
         plhs[0] = mxCreateDoubleScalar(n / sizeof(short) / 2);
+        mexPrintf("[Local USRP Mex] Received %d bytes for %d channels at %f\n", n , numChans, start_time);
         nlhs = 2;
     } else if (!strcmp("close", cmd)) {
-        mexPrintf("close operation\n");
+        mexPrintf("[Local USRP Mex] Shutting down\n");
         if (txSockfd > 0) close(txSockfd);
         if (rxSockfd > 0) close(rxSockfd);
         if (rxCnSockfd > 0) close(rxCnSockfd);

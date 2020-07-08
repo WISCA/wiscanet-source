@@ -124,7 +124,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	printf("[USRP Control] RX CMD for rxTime=%f, time_now =%f, numChannels = %d\r\n", realRxTime, realNowTime, numChannels);
 
 	if (realRxTime < realNowTime) {
-		printf("Error: RX time has already passed\n");
+		printf("[USRP Control] Error: RX time has already passed\n");
 		exit(1);
 	}
 
@@ -588,14 +588,14 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		time_now = usrp->get_time_now(0);
 		start_time = (double *)(&buff[0] + rSamLen - 1);
         numChans = (size_t *)(&buff[0] + rSamLen);
-		printf("TX: rx %ld byte (%ld samples) from MATLAB for nChans = %ld\n", rLen, rSamLen, *numChans);
+		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels\n", rLen, rSamLen, *numChans);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
 		// txtime management
 		txTime = uhd::time_spec_t(*start_time);
 		if (prev_txtime.get_real_secs() > time_now.get_real_secs()) {
-			printf("scheduling error prev_time = %f, time_now = %f\n", prev_txtime.get_real_secs(),
+			printf("[USRP Control] Scheduling error: prev_time = %f, time_now = %f\n", prev_txtime.get_real_secs(),
 			       time_now.get_real_secs());
 			exit(1);
 		}
@@ -626,7 +626,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 			printf("tx error actual_tx_len = %ld, request_len = %ld\n", txLen, total_num_samps);
 			exit(1);
 		}
-		printf("assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(), time_now.get_real_secs());
+		printf("[USRP Control] Transmit: assigned_tx_time = %f, time_now = %f\n", prev_txtime.get_real_secs(), time_now.get_real_secs());
 		// printf("txBufLoc = %d, txLen = %d\n", txBufLoc, txLen);
 
 		// send a mini EOB packet
