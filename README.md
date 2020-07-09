@@ -19,7 +19,7 @@
 
 ### User Documentation
 
-- Documentation on developing applications and running WISCANET can be found here: [wiscanet-docs](https://gitbliss.asu.edu/jholtom/wiscanet-docs)
+- Documentation on developing applications and running WISCANET can be found here: [wiscanet_manual.pdf](https://gitbliss.asu.edu/jholtom/wiscanet-docs/src/master/wiscanet_manual.pdf)
 
 ### Code Documentation
 
