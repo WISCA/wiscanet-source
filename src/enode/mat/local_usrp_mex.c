@@ -101,7 +101,8 @@ void controlRecv(double start_time, uint16_t numChans) {
 }
 
 int recvPacket(char *buf, int len) {
-    int retval, slen;
+    int retval = 0;
+    int slen;
 
     unsigned int buf_pos = 0;
     unsigned int rxunit = 4000 * 2;
@@ -136,7 +137,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int cportNum;
     short *sBuf;
     int len;
-    const int *dim_array;
+    const mwSize *dim_array;
     mwSize dims[1];
     int n;
     double start_time;

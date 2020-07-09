@@ -105,7 +105,6 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	double *stime = (double *)cmdBuf;
 	double realRxTime, realNowTime;
 	double timeout;
-	size_t rxLoc;
 	size_t rxUnit;
 	uint16_t numChannels;
 
@@ -556,7 +555,6 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	size_t rResult;
 	double *start_time;
 	double timeout;
-	size_t txUnit = tx_stream->get_max_num_samps();
 	size_t txLen;
 	size_t rSamLen;
 	size_t *numChans;
@@ -661,7 +659,7 @@ void transmit_TDMA_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 	double timeout;
 	int txUnit = tx_stream->get_max_num_samps();
 	int txBufLoc = 0;
-	int txLen;
+	int txLen = 0;
 	int rSamLen;
 	int skipFlag = 0;
 
