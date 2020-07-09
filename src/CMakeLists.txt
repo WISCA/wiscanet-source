@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(WISCANET VERSION 0.7.1)
+project(WISCANET VERSION 0.8.0)
 
 # Build Types
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
