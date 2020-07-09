@@ -13,7 +13,9 @@
 #include <chrono>
 #include <csignal>
 #include <future>
+#include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -150,11 +152,12 @@ int checkPrevNodeHistory(char *ipaddr) {
 void printNodeInfo() {
 	int i;
 
-	cout << "======== NODE INFO ========\n";
+	cout << "================== NODE INFO ====================\n";
+    cout << setw(6) << "Node #" << " : " << setw(3) << "FD #" << " : " << setw(15) << left << "IP Address" << " : " << setw(14) << "State" << endl;
     sysconfMtx.lock();
 	for (i = 0; i < MAX_ENODE; i++) {
 		if (sysConf[i].state) {
-			cout << i << " : " << sysConf[i].sockFd << " : " << sysConf[i].ipaddr << " : " << sysConf[i].opState
+			cout << setw(6) << i << " : " << setw(4) << sysConf[i].sockFd << " : " << setw(15) << left << sysConf[i].ipaddr << " : " << setw(14) << sysConf[i].opState
 			     << endl;
 		}
 	}
@@ -219,6 +222,7 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		sysConf[nodeId].sockFd = sock;
 		strcpy(sysConf[nodeId].ipaddr, pload->ipaddr);
 		sysConf[nodeId].usrFlag = 0;
+        sysConf[nodeId].opState = OP_IDLE;
         sysconfMtx.unlock();
 		// print updated node info
 		// printNodeInfo();
