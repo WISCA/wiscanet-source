@@ -75,6 +75,7 @@ typedef enum usrCmdType {
 	CMD_PRT_STATUS = 1,
 	CMD_DL_MATLAB = 2,
 	CMD_EX_MATLAB = 4,
+    CMD_DLEX_MATLAB = 6,
 	CMD_STOP_MATLAB = 8,
 	CMD_CLT_LOG = 16,
 	CMD_LOG_ANAL = 32
