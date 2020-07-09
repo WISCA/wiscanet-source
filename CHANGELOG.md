@@ -1,9 +1,4 @@
 # Changelog
-All notable
-
-### Changed to WISCANET will documented here
-
-## [Unreleased]
 
 ## [0.8.0] - 2020-07-09
 
