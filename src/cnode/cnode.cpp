@@ -59,6 +59,8 @@ int ss, controlFd[2];
 
 std::atomic<bool> shutdownFlag; /*!< Flag to shutdown network controller when exiting */
 
+std::mutex sysconfMtx;  //Mutex to be held before and after reading/writing to sysConf
+
 /**
  * Called before any exit, cleanly shutdowns any open sockets.
  *
@@ -91,10 +93,14 @@ void cleanUpMemory() { free(sysConf); }
  */
 int getFreeNodeInfo() {
 	int i;
-
+    sysconfMtx.lock();
 	for (i = 0; i < MAX_ENODE; i++) {
-		if (sysConf[i].state == 0) return i;
+		if (sysConf[i].state == 0){
+            sysconfMtx.unlock();
+            return i;
+        }
 	}
+    sysconfMtx.unlock();
 
 	return -1;
 }
@@ -105,9 +111,14 @@ int getFreeNodeInfo() {
  */
 int getActiveNodeIdx(int curIdx) {
 	int i;
+    sysconfMtx.lock();
 	for (i = curIdx + 1; i < MAX_ENODE; i++) {
-		if (sysConf[i].state == 1) return i;
+		if (sysConf[i].state == 1) {
+            sysconfMtx.unlock();
+            return i;
+        }
 	}
+    sysconfMtx.unlock();
 	return -1;
 }
 
@@ -119,15 +130,17 @@ int getActiveNodeIdx(int curIdx) {
  */
 int checkPrevNodeHistory(char *ipaddr) {
 	int i;
+    sysconfMtx.lock();
 	for (i = 0; i < MAX_ENODE; i++) {
 		if (sysConf[i].state == 1) {
 			if (strcmp(sysConf[i].ipaddr, ipaddr) == 0) {
 				sysConf[i].opState = OP_IDLE;
+                sysconfMtx.unlock();
 				return i;
 			}
 		}
 	}
-
+    sysconfMtx.unlock();
 	return -1;
 }
 
@@ -138,12 +151,14 @@ void printNodeInfo() {
 	int i;
 
 	cout << "======== NODE INFO ========\n";
+    sysconfMtx.lock();
 	for (i = 0; i < MAX_ENODE; i++) {
 		if (sysConf[i].state) {
 			cout << i << " : " << sysConf[i].sockFd << " : " << sysConf[i].ipaddr << " : " << sysConf[i].opState
 			     << endl;
 		}
 	}
+    sysconfMtx.unlock();
 	cout << endl;
 }
 
@@ -184,7 +199,9 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 
 	// check previous history
 	if ((nodeId = checkPrevNodeHistory(pload->ipaddr)) != -1) {
+        sysconfMtx.lock();
 		printf("reconnected node (%s)\n", sysConf[nodeId].ipaddr);
+        sysconfMtx.unlock();
 		recFlag = 1;
 	}
 
@@ -197,11 +214,12 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 			cleanUpMemory();
 			return -ENOMEM;
 		}
+        sysconfMtx.lock();
 		sysConf[nodeId].state = 1;
 		sysConf[nodeId].sockFd = sock;
 		strcpy(sysConf[nodeId].ipaddr, pload->ipaddr);
 		sysConf[nodeId].usrFlag = 0;
-
+        sysconfMtx.unlock();
 		// print updated node info
 		// printNodeInfo();
 
@@ -209,7 +227,9 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 		sprintf(command, "mkdir -p ../log/enode_%d", nodeId);
 		system(command);
 	} else {
+        sysconfMtx.lock();
 		sysConf[nodeId].sockFd = sock;
+        sysconfMtx.unlock();
 	}
 
 	// send acknowledge
@@ -232,7 +252,9 @@ void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
 
 	// update node database
 	nodeId = pload->enodeId;
+    sysconfMtx.lock();
 	sysConf[nodeId].opState = OP_RUN;
+    sysconfMtx.unlock();
 
 	// print updated node info
 	// printNodeInfo();
@@ -252,7 +274,9 @@ void rxMsgEnodeRunCmpInd(int sock, cMsgEnodeRunCmpInd_t *pload, int size) {
 
 	// update node database
 	nodeId = pload->enodeId;
+    sysconfMtx.lock();
 	sysConf[nodeId].opState = OP_CMP;
+    sysconfMtx.unlock();
 
 	runEnodeCmpCount++;
 }
@@ -267,12 +291,13 @@ void rxMsgEnodeLogAck(int sock, cMsgEnodeLogAck_t *pload, int size) {
 	printf("\n<-- msgEnodeLogAck (%d)\n", nodeId);
 
 	// log copy
+    sysconfMtx.lock();
 	sprintf(cbuf, "mkdir -p ../log/enode_%d; cd ../log/enode_%d; scp %s@%s:wdemo/run/enode/log/wisca_log.tgz .", nodeId,
 	        nodeId, userName, sysConf[nodeId].ipaddr);
 	system(cbuf);
 	sprintf(cbuf, "ssh %s@%s 'rm -f wdemo/run/enode/log/*'", userName, sysConf[nodeId].ipaddr);
 	system(cbuf);
-
+    sysconfMtx.unlock();
 	// decompress tar file
 	sprintf(cbuf, "cd ../log/enode_%d; tar xfz wisca_log.tgz; rm wisca_log.tgz", nodeId);
 	system(cbuf);
@@ -295,11 +320,13 @@ void txEnodeDlInd() {
 	msg.hdr.type = MSG_ENODE_DL;
 
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		if (sysConf[cIdx].usrFlag == 1) {
 			printf("--> enodeDlInd to enode %d\n", cIdx);
 			sock = sysConf[cIdx].sockFd;
 			write(sock, &msg, MSG_LEN(cMsgEnodeDlInd_t));
 		}
+        sysconfMtx.unlock();
 	}
 }
 
@@ -337,7 +364,9 @@ int downloadMatFiles() {
 	matchFlag = 0;
 
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		sysConf[cIdx].usrFlag = 0;
+        sysconfMtx.unlock();
 	}
 
 	dlEnodeCount = 0;
@@ -348,11 +377,14 @@ int downloadMatFiles() {
 		sscanf(ibuf, "%s", ipaddr);
 
 		while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+            sysconfMtx.lock();
 			if (strcmp(sysConf[cIdx].ipaddr, ipaddr) == 0) {
 				matchFlag = 1;
 				sysConf[cIdx].usrFlag = 1;
+                sysconfMtx.unlock();
 				break;
 			}
+            sysconfMtx.unlock();
 		}
 		if (matchFlag == 0) {
 			printf("Err : Node %s is not connected\n", ipaddr);
@@ -360,26 +392,34 @@ int downloadMatFiles() {
 		}
 
 		// parse config file
+        sysconfMtx.lock();
 		sprintf(cnfFName, "../../usr/cfg/usrconfig_%s.xml", sysConf[cIdx].ipaddr);
+        sysconfMtx.unlock();
 		printf("cnfFName = %s\n", cnfFName);
 		if (access(cnfFName, F_OK) == -1) continue;  // skip if configuration does not exist.
 
 		// parse config file
 		usrCfgParse(cnfFName, &cfg);
+        sysconfMtx.lock();
 		strcpy(sysConf[cIdx].macMode, cfg.macMode);
 		strcpy(sysConf[cIdx].matDir, cfg.matDir);
 		strcpy(sysConf[cIdx].mLogFile, cfg.mLogFile);
+        sysconfMtx.unlock();
 
 		// config file copy
+        sysconfMtx.lock();
 		sprintf(cbuf, "cp ../../usr/cfg/usrconfig_%s.xml ../../usr/mat/usrconfig.xml", sysConf[cIdx].ipaddr);
+        sysconfMtx.unlock();
 		system(cbuf);
 
 		// install matlab file
+        sysconfMtx.lock();
 		sprintf(cbuf, "cd ../../usr; tar cfz umat.tgz mat; scp umat.tgz %s@%s:wdemo/run/enode", userName,
 		        sysConf[cIdx].ipaddr);
 		system(cbuf);
 		sprintf(cbuf, "ssh %s@%s 'cd wdemo/run/enode; tar xfz umat.tgz; rm umat.tgz'", userName, sysConf[cIdx].ipaddr);
 		system(cbuf);
+        sysconfMtx.unlock();
 		remove("../../usr/umat.tgz");
 
 		dlEnodeCount++;
@@ -421,6 +461,7 @@ int enodeRunReq() {
 	runEnodeCount = 0;
 
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp(sysConf[cIdx].macMode, "UMAC") == 0) {
 				printf("node start time = %ld, %s\n", start_time, res);
@@ -434,6 +475,7 @@ int enodeRunReq() {
 			sysConf[cIdx].opState = OP_START;
 			runEnodeCount++;
 		}
+        sysconfMtx.unlock();
 	}
 
 	return 0;
@@ -447,8 +489,10 @@ int enodeStopReq() {
 	msg.hdr.type = MSG_ENODE_STOP;
 
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		printf("--> enodeStopReq (node-%d)(%s)\n", cIdx, sysConf[cIdx].ipaddr);
 		sock = sysConf[cIdx].sockFd;
+        sysconfMtx.unlock();
 		write(sock, &msg, MSG_LEN(cMsgEnodeStopReq_t));
 	}
 
@@ -466,6 +510,7 @@ int enodeLogReq() {
 	logEnodeCount = 0;
 	logEnodeAckCount = 0;
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		if (sysConf[cIdx].usrFlag == 1) {
 			sprintf(cbuf, "cd ../log/enode_%d; rm -f *", cIdx);
 			system(cbuf);
@@ -474,6 +519,7 @@ int enodeLogReq() {
 			write(sock, &msg, MSG_LEN(cMsgEnodeLogReq_t));
 			logEnodeCount++;
 		}
+        sysconfMtx.unlock();
 	}
 
 	return 0;
@@ -493,23 +539,27 @@ int logAnalysis() {
 		return -ENOENT;
 	}
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp("NULL", sysConf[cIdx].mLogFile) == 0) continue;
 			fprintf(fp, "cd enode_%d;\n", cIdx);
 			fprintf(fp, "%s;\n", sysConf[cIdx].mLogFile);
 			fprintf(fp, "cd ..;\n");
 		}
+        sysconfMtx.unlock();
 	}
 	fclose(fp);
 
 	// analysis matlab file copy
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		if (sysConf[cIdx].usrFlag == 1) {
 			if (strcmp("NULL", sysConf[cIdx].mLogFile) == 0) continue;
 			sprintf(cbuf, "cp ../../usr/mat/%s/%s.m ../log/enode_%d", sysConf[cIdx].matDir, sysConf[cIdx].mLogFile,
 			        cIdx);
 			system(cbuf);
 		}
+        sysconfMtx.unlock();
 	}
 
 	// perfrom analysis with log files
@@ -526,9 +576,11 @@ void enodeTermReq() {
 	msg.hdr.type = MSG_ENODE_TERM;
 
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
+        sysconfMtx.lock();
 		printf("--> enodeTermReq (node-%d)(%s)\n", cIdx, sysConf[cIdx].ipaddr);
 		sock = sysConf[cIdx].sockFd;
 		write(sock, &msg, MSG_LEN(cMsgEnodeTermReq_t));
+        sysconfMtx.unlock();
 	}
 }
 
@@ -675,7 +727,7 @@ int nodeControl(int s) {
 			printf("unknown message : %X %X %X %X\n", buffer[0], buffer[1], buffer[2], buffer[3]);
 			break;
 	}
-	cout << "enter> ";
+	cout << "wiscanet> ";
 	return size;
 }
 
@@ -722,10 +774,12 @@ void controllerInit() {
 	struct sockaddr_in server_addr;
 
 	// state information init
+    sysconfMtx.lock();
 	sysConf = (struct nodeInfo *)malloc(MAX_ENODE * sizeof(struct nodeInfo));
 	for (i = 0; i < MAX_ENODE; i++) {
 		sysConf[i].state = NODE_FREE;
 	}
+    sysconfMtx.unlock();
 
 	// socket init
 	bzero(&server_addr, sizeof(server_addr));
