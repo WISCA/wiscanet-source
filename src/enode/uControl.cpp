@@ -588,7 +588,7 @@ void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_sam
 		prev_txtime = txTime;
 
 		// md setup
-		md.start_of_burst = false;
+		md.start_of_burst = true;
 		md.end_of_burst = false;
 		md.has_time_spec = true;
 		md.time_spec = txTime;
@@ -759,7 +759,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	    "progress", "periodically display short-term bandwidth")("stats", "show average bandwidth on exit")(
 	    "sizemap", "track packet size and display breakdown on exit")("null", "run without writing to file")(
 	    "continue", "don't abort on a bad packet")("skip-lo", "skip checking LO lock status")(
-	    "int-n", "tune USRP with integer-N tuning")("opmode", po::value<std::string>(&opmode)->default_value("TX/RX"),
+        "opmode", po::value<std::string>(&opmode)->default_value("TX/RX"),
 	                                                "node operation mode (TX/RX, TX, RX)")(
 	    "macmode", po::value<std::string>(&macmode)->default_value("TDMA"), "node operation mode (UMAC, TDMA)")(
 	    "tslot", po::value<size_t>(&tslot)->default_value(0), "TDMA tx timeslot");
@@ -829,7 +829,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	if (vm.count("freq")) {  // with default of 0.0 this will always be true
 		std::cout << boost::format("Setting RX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tune_request(freq);
-		if (vm.count("int-n")) tune_request.args = uhd::device_addr_t("mode_n=integer");
+        // Disable CORDIC rotation, to achieve phase sync between cycles
+        tune_request.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
+        tune_request.dsp_freq = 0.0;
 		// we will tune the frontends in 200ms from now
 		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
@@ -842,7 +844,9 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		std::cout << boost::format("Actual RX Freq: %f MHz...") % (usrp->get_rx_freq() / 1e6) << std::endl << std::endl;
 		std::cout << boost::format("Setting TX Freq: %f MHz...") % (freq / 1e6) << std::endl;
 		uhd::tune_request_t tx_tune_request(freq);
-		if (vm.count("int-n")) tx_tune_request.args = uhd::device_addr_t("mode_n=integer");
+        // Disable CORDIC rotation, to achieve phase sync between cycles
+        tune_request.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
+        tune_request.dsp_freq = 0.0;
 		// we will tune the frontends in 200ms from now
 		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
