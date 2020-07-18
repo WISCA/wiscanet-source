@@ -129,7 +129,7 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 			exit(1);
 		}
 
-		timeout = realRxTime - realNowTime + 0.1;
+		timeout = realRxTime - realNowTime + 1; // Put some slack in there for huge applications, doing MIMO
 
 		// create a receive streamer
 		uhd::stream_args_t stream_args(cpu_format, wire_format);
@@ -454,8 +454,19 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	int gps_unlocked = 0;
 
 	// Lock mboard clocks
-	usrp->set_clock_source("gpsdo");
-	usrp->set_time_source("gpsdo");
+	usrp->set_clock_source("gpsdo",0);
+	usrp->set_time_source("gpsdo",0);
+    int numMB = usrp->get_num_mboards();
+    std::cout << "Synchronizing for "<< numMB << " Main Boards" << std::endl;
+    if(numMB > 1){
+        std::cout << "Since there are multiple motherboards detected, it is assumed the first (addr0) is the master." << std::endl;
+        std::cout << "Now syncing the rest of the motherboards to the provided reference clock." << std::endl;
+        for(int i = 1; i <= numMB; i++){
+            usrp->set_clock_source("external",i);
+            usrp->set_time_source("external",i);
+        }
+    }
+
 
 	std::cout << "Synchronizing mboard " << 0 << ": " << usrp->get_mboard_name(0) << std::endl;
 	std::vector<std::string> sensor_names = usrp->get_mboard_sensor_names(0);
@@ -499,6 +510,13 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	// Set to GPS time
 	uhd::time_spec_t gps_time = uhd::time_spec_t(time_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
 	usrp->set_time_next_pps(gps_time + 1.0, 0);
+    if(numMB > 1){
+        std::cout << "Since there are multiple motherboards detected, it is assumed the first (addr0) is the master." << std::endl;
+        std::cout << "Now syncing the rest of the motherboards to the master's GPS time" << std::endl;
+        for(int i = 1; i <= numMB; i++){
+	        usrp->set_time_next_pps(gps_time + 1.0, i);
+        }
+    }
 
 	// Wait for it to apply
 	// The wait is 2 seconds because N-Series has a known issue where
@@ -967,7 +985,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 
 	// synchronization
 	synch_to_gps(usrp);
-	synch_to_gps(tx_usrp);
+    // This second one isn't actually necessary, because its acting on the same underlying motherboards.
+	//synch_to_gps(tx_usrp);
 
 	// start thread
 	if (opmode == "TX/RX" || opmode == "TX") {
