@@ -461,7 +461,8 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
     if(numMB > 1){
         std::cout << "Since there are multiple motherboards detected, it is assumed the first (addr0) is the master." << std::endl;
         std::cout << "Now syncing the rest of the motherboards to the provided reference clock." << std::endl;
-        for(int i = 1; i <= numMB; i++){
+        for(int i = 1; i < numMB; i++){
+            std::cout << "Setting MBoard: " << i << "'s clock reference" << std::endl;
             usrp->set_clock_source("external",i);
             usrp->set_time_source("external",i);
         }
@@ -511,9 +512,9 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	uhd::time_spec_t gps_time = uhd::time_spec_t(time_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
 	usrp->set_time_next_pps(gps_time + 1.0, 0);
     if(numMB > 1){
-        std::cout << "Since there are multiple motherboards detected, it is assumed the first (addr0) is the master." << std::endl;
         std::cout << "Now syncing the rest of the motherboards to the master's GPS time" << std::endl;
-        for(int i = 1; i <= numMB; i++){
+        for(int i = 1; i < numMB; i++){
+            std::cout << "Setting MBoard: " << i << " to GPS time" << std::endl;
 	        usrp->set_time_next_pps(gps_time + 1.0, i);
         }
     }
