@@ -802,19 +802,22 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	if (enable_size_map)
 		std::cout << "Packet size tracking enabled - will only recv one packet at a time!" << std::endl;
 
-	// Create the USRP Device
+	// Create the RX USRP Device
 	std::cout << std::endl;
 	std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
 	uhd::usrp::multi_usrp::sptr usrp = uhd::usrp::multi_usrp::make(args);
 
+	// Create the TX USRP Device
+	std::cout << std::endl;
+	std::cout << boost::format("Creating the usrp device with: %s...") % args << std::endl;
+	uhd::usrp::multi_usrp::sptr tx_usrp = uhd::usrp::multi_usrp::make(args);
+
 	// always select the subdevice first, the channel mapping affects the other settings
 	if (vm.count("subdev")) usrp->set_rx_subdev_spec(subdev);
-	if (vm.count("subdev")) usrp->set_tx_subdev_spec(subdev);
+	if (vm.count("subdev")) tx_usrp->set_tx_subdev_spec(subdev);
 
 	std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
-
-	// GPS Synchronization
-	synch_to_gps(usrp);
+	std::cout << boost::format("Using Device: %s") % tx_usrp->get_pp_string() << std::endl;
 
 	// set the sample rate
 	if (rate <= 0.0) {
@@ -824,8 +827,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	std::cout << boost::format("Setting TX and RX Rate: %f Msps...") % (rate / 1e6) << std::endl;
 	usrp->set_rx_rate(rate);
 	std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate() / 1e6) << std::endl << std::endl;
-	usrp->set_tx_rate(rate);
-	std::cout << boost::format("Actual TX Rate: %f Msps...") % (usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
+	tx_usrp->set_tx_rate(rate);
+	std::cout << boost::format("Actual TX Rate: %f Msps...") % (tx_usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
 
 	// Detect which channels to use
 	std::vector<std::string> channel_strings;
@@ -839,7 +842,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 			channel_nums.push_back(std::stoi(channel_strings[ch]));
 	}
 	size_t numRxChannels = usrp->get_rx_num_channels();
-	size_t numTxChannels = usrp->get_tx_num_channels();
+	size_t numTxChannels = tx_usrp->get_tx_num_channels();
 	uhd::time_spec_t cmd_time;
 	// set the center frequency
 	if (vm.count("freq")) {  // with default of 0.0 this will always be true
@@ -864,15 +867,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
         tune_request.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
         tune_request.dsp_freq = 0.0;
 		// we will tune the frontends in 200ms from now
-		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
-		usrp->set_command_time(cmd_time);
+		tx_usrp->set_command_time(cmd_time);
 		for (size_t i = 0; i < numTxChannels; i++) {
-			usrp->set_tx_freq(tune_request, i);
+			tx_usrp->set_tx_freq(tune_request, i);
 		}
 		// end timed commands
-		usrp->clear_command_time();
-		std::cout << boost::format("Actual TX Freq: %f MHz...") % (usrp->get_tx_freq() / 1e6) << std::endl
+		tx_usrp->clear_command_time();
+		std::cout << boost::format("Actual TX Freq: %f MHz...") % (tx_usrp->get_tx_freq() / 1e6) << std::endl
 		          << std::endl;
 	}
 
@@ -893,15 +896,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	if (vm.count("txgain")) {
 		std::cout << boost::format("Setting TX Gain: %f dB...") % txgain << std::endl;
 		// we will tune the frontends in 200ms from now
-		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
-		usrp->set_command_time(cmd_time);
+		tx_usrp->set_command_time(cmd_time);
 		for (size_t i = 0; i < numTxChannels; i++) {
-			usrp->set_tx_gain(txgain, i);
+			tx_usrp->set_tx_gain(txgain, i);
 		}
 		// end timed commands
-		usrp->clear_command_time();
-		std::cout << boost::format("Actual TX Gain: %f dB...") % usrp->get_tx_gain() << std::endl << std::endl;
+		tx_usrp->clear_command_time();
+		std::cout << boost::format("Actual TX Gain: %f dB...") % tx_usrp->get_tx_gain() << std::endl << std::endl;
 	}
 
 	// set the IF filter bandwidth
@@ -920,15 +923,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		          << std::endl;
 		std::cout << boost::format("Setting TX Bandwidth: %f MHz...") % (bw / 1e6) << std::endl;
 		// we will tune the frontends in 200ms from now
-		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
-		usrp->set_command_time(cmd_time);
+		tx_usrp->set_command_time(cmd_time);
 		for (size_t i = 0; i < numTxChannels; i++) {
-			usrp->set_tx_bandwidth(bw, i);
+			tx_usrp->set_tx_bandwidth(bw, i);
 		}
 		// end timed commands
-		usrp->clear_command_time();
-		std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % (usrp->get_tx_bandwidth() / 1e6) << std::endl
+		tx_usrp->clear_command_time();
+		std::cout << boost::format("Actual TX Bandwidth: %f MHz...") % (tx_usrp->get_tx_bandwidth() / 1e6) << std::endl
 		          << std::endl;
 	}
 
@@ -944,14 +947,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		// end timed commands
 		usrp->clear_command_time();
 		// we will tune the frontends in 200ms from now
-		cmd_time = usrp->get_time_now() + uhd::time_spec_t(0.2);
+		cmd_time = tx_usrp->get_time_now() + uhd::time_spec_t(0.2);
 		// sets command time on all devices
-		usrp->set_command_time(cmd_time);
+		tx_usrp->set_command_time(cmd_time);
 		for (size_t i = 0; i < numTxChannels; i++) {
-			usrp->set_tx_antenna(ant, i);
+			tx_usrp->set_tx_antenna(ant, i);
 		}
 		// end timed commands
-		usrp->clear_command_time();
+		tx_usrp->clear_command_time();
 	}
 
 	boost::this_thread::sleep(boost::posix_time::seconds{static_cast<long>(setup_time)});  // allow for some setup time
@@ -966,14 +969,14 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		if (ref == "external")
 			check_locked_sensor(usrp->get_mboard_sensor_names(0), "ref_locked",
 			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, _1, 0), setup_time);
-		check_locked_sensor(usrp->get_tx_sensor_names(0), "lo_locked",
-		                    boost::bind(&uhd::usrp::multi_usrp::get_tx_sensor, usrp, _1, 0), setup_time);
+		check_locked_sensor(tx_usrp->get_tx_sensor_names(0), "lo_locked",
+		                    boost::bind(&uhd::usrp::multi_usrp::get_tx_sensor, tx_usrp, _1, 0), setup_time);
 		if (ref == "mimo")
-			check_locked_sensor(usrp->get_mboard_sensor_names(0), "mimo_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, _1, 0), setup_time);
+			check_locked_sensor(tx_usrp->get_mboard_sensor_names(0), "mimo_locked",
+			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, _1, 0), setup_time);
 		if (ref == "external")
-			check_locked_sensor(usrp->get_mboard_sensor_names(0), "ref_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, _1, 0), setup_time);
+			check_locked_sensor(tx_usrp->get_mboard_sensor_names(0), "ref_locked",
+			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, _1, 0), setup_time);
 	}
 
 	if (total_num_samps == 0) {
@@ -981,15 +984,19 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
 	}
 
+	// synchronization
+	synch_to_gps(usrp);
+    // This second one isn't actually necessary, because its acting on the same underlying motherboards.
+	//synch_to_gps(tx_usrp);
 
 	// start thread
 	if (opmode == "TX/RX" || opmode == "TX") {
 		boost::thread_group transmit_thread;
 		if (macmode == "TDMA") {
-			transmit_thread.create_thread(boost::bind(&transmit_TDMA_worker, usrp, total_num_samps, tslot));
+			transmit_thread.create_thread(boost::bind(&transmit_TDMA_worker, tx_usrp, total_num_samps, tslot));
 		} else if (macmode == "UMAC") {
 			transmit_thread.create_thread(
-			    boost::bind(&transmit_UMAC_worker, usrp, total_num_samps, tslot, channel_nums));
+			    boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, tslot, channel_nums));
 		} else {
 			printf("unknown macmode = %s\n", macmode.c_str());
 			exit(1);
