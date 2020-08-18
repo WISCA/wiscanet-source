@@ -6,3 +6,5 @@ set(LIBRARIES "pthread" "ssl" "crypto" "tinyxml" "cnfParse")
 
 add_executable(cnode ${SOURCE_FILES})
 target_link_libraries(cnode ${LIBRARIES})
+
+install(TARGETS cnode DESTINATION run/cnode/bin/)

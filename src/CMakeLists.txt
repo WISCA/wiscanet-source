@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.2)
 project(WISCANET VERSION 0.8.0)
 
+# If desired, -DCMAKE_INSTALL_PREFIX can be used to point to another home directory/wdemo/ folder
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set (CMAKE_INSTALL_PREFIX "/home/wisca/wdemo/" CACHE PATH "Default WISCA install path" FORCE )
+endif()
+
 # Build Types
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}
     CACHE STRING "Choose the type of build, options are: None Debug Release tsan asan lsan msan ubsan"
