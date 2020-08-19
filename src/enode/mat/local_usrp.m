@@ -1,11 +1,7 @@
 classdef local_usrp
     properties
-
         request_num_samps
-
     end
-
-
 
     methods (Static)
         function lId = logicalId()
@@ -14,11 +10,9 @@ classdef local_usrp
             fprintf('node logical ID = %d\n', lId);
             fclose(fId);
         end
-
     end
 
     methods
-        %=================================================================
         %===========================================================
         function this = set_usrp(this,type, ant, subdev, ref, wirefmt, num_samps, ...
                 sample_rate, freq, rx_gain, tx_gain, bw, setup_time)
@@ -28,10 +22,12 @@ classdef local_usrp
             local_usrp_mex('rxinit', '127.0.0.1', 9944, 9945);
             this.request_num_samps = num_samps;
         end
-
         %===========================================================
         function tx_usrp(this,start_time, buff_in, num_channels)
             % This expects a num_samps x num_channels complex double matrix
+            [inRows, inCols] = size(buff_in);
+            assert(inRows == this.request_num_samps,'Wrong number of samples input!');
+            assert(inCols == num_channels,'Wrong number of channels input!');
             flatBuff = reshape(buff_in,1,[]);
             total_samples = 2*this.request_num_samps*num_channels;
             txbuff = zeros(total_samples, 1);
@@ -46,16 +42,9 @@ classdef local_usrp
         function rxWav = rx_usrp(this,start_time, num_channels)
             % This returns a num_samps x num_channels complex double matrix
             fprintf('[Local USRP] Receiving at %f for %d channels\n', start_time, num_channels);
-            % setup
             rx_comp_unit =  this.request_num_samps;
-            %rx_comp_unit = this.request_num_samps;
-
             rx_short_unit = rx_comp_unit * 2;
 
-            % data read
-            % local_usrp_mex('rcon', start_time);
-
-            %fprintf('rx_usrp(), start_time: %f, len=%f\n', start_time, rx_comp_unit);
             [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time,num_channels);
             rxdat = rdat;
 
@@ -63,10 +52,8 @@ classdef local_usrp
             rxWavComplex = complex(rxBuff(1:2:end),rxBuff(2:2:end));
             rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
             fprintf('[Local USRP] Finished reciving %d complex samples at time %f\n', len/2, start_time);
-            %fprintf('R');
 
         end
-
         %===========================================================
         function terminate_usrp(this)
             pause(1);
