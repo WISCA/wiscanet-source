@@ -38,3 +38,10 @@
   - 9940 - uControl TX
   - 9944 - uControl RX
   - 9945 - uControl RC
+
+## ToDo/Thoughts
+- UHD 4.0 has a Power API, this can be used to calibrate input/output power levels, and know something about absolute received/transmitted power, we currently use UHD v3.15.0.0, but should be a straightforward upgrade
+- Monostatic Radar option?  Single node transmits/receives in the same cycle...
+- Does tx_usrp object need to exist?  If so, does it actually need to also have synch_to_gps called on it?
+- A version of local_usrp that doesn't use MEX, as MATLAB has built-in UDP connection primitives
+- Improving the UDP interface between uControl and the MEX - usrp_command structure potentially?
