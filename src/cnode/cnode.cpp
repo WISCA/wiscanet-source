@@ -243,7 +243,7 @@ int rxMsgEnodeReg(int sock, cMsgEnodeReg_t *pload, int size) {
 
 
 /**
- * Received execution acknowledgement from edge nodes
+ * Received execution acknowledgment from edge nodes
  *
  * Updates sysConf state for the enode, acknowledge that it ran the program, prints message on cnode
  *
@@ -265,7 +265,7 @@ void rxMsgEnodeRunAck(int sock, cMsgEnodeRunAck_t *pload, int size) {
 }
 
 /*
- * Receive compleition message from edge node
+ * Receive completion message from edge node
  *
  * Updates sysConf state for the enode, acknowledge that it has completed running, prints message on cnode
  *
@@ -285,6 +285,15 @@ void rxMsgEnodeRunCmpInd(int sock, cMsgEnodeRunCmpInd_t *pload, int size) {
 	runEnodeCmpCount++;
 }
 
+/*
+ * Receive log creation acknowledgment and retrieve and unpack files from edge node
+ *
+ * Receives log tarfile ack from edge nodes, retrieves tar file from edge node, unpacks tar from edge node and then makes a backup and handles log file history
+ *
+ * \param sock Receiving socket id
+ * \param pload Payload received from edge node
+ * \param size Payload size (in bytes)
+ */
 void rxMsgEnodeLogAck(int sock, cMsgEnodeLogAck_t *pload, int size) {
 	int nodeId;
 	char tbuf[128];
@@ -316,6 +325,11 @@ void rxMsgEnodeLogAck(int sock, cMsgEnodeLogAck_t *pload, int size) {
 	}
 }
 
+/*
+ * Send download indicator to edge node
+ *
+ * Sends downloaded configuration and MATLAB files downloaded indicator to edge nodes. *
+ */
 void txEnodeDlInd() {
 	int cIdx = -1;
 	ctrlMsg_t msg;
@@ -334,12 +348,24 @@ void txEnodeDlInd() {
 	}
 }
 
+/*
+ * Received download acknowledgment from edge node
+ *
+ * \param sock Receiving socket id
+ * \param pload Payload received from edge node
+ * \param size Payload size (in bytes)
+ */
 void rxMsgEnodeDlAck(int sock, cMsgEnodeDlAck_t *pload, int size) {
 	cout << "<-- enodeDlAck\n";
 
 	if (pload->ret == 0) dlEnodeAckCount++;
 }
 
+/*
+ * Wait for download acknowledgment from all edge nodes
+ *
+ * Timeout for 50ms in between checking if all of the edge nodes have reported in that they have received their downloaded files
+ */
 int waitDlAck() {
 	for (size_t i = 0; i < 4; i++) {
 		usleep(500000);
@@ -349,6 +375,11 @@ int waitDlAck() {
 	return -1;
 }
 
+/*
+ * Download MATLAB program files to edge nodes
+ *
+ * Iterate over all edge nodes, and download selected MATLAB files to them via tar/scp
+ */
 int downloadMatFiles() {
 	int cIdx = -1;
 	char cbuf[1024];
@@ -485,6 +516,11 @@ int enodeRunReq() {
 	return 0;
 }
 
+/*
+ * Send stop execution request to edge nodes
+ *
+ * Send stop execution request to edge nodes, will attempt to kill uControl and MATLAB (user program)
+*/
 int enodeStopReq() {
 	ctrlMsg_t msg;
 	int cIdx = -1;
@@ -571,7 +607,11 @@ int logAnalysis() {
 	system(cbuf);
 	return 0;
 }
-
+/*
+ * Send termination request to edge node
+ *
+ * Send termination request to edge node.  Edge node will close connections and exit
+ */
 void enodeTermReq() {
 	ctrlMsg_t msg;
 	int cIdx = -1;
