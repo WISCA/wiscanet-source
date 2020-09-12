@@ -4,206 +4,123 @@
 
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
-#include "tinyxml.h"
+#include <yaml-cpp/yaml.h>
 
-using namespace std;
+int sysCfgParse(char* ymlFn, char* serverIp, int* serverPort) {
+    YAML::Node sysCfg = YAML::LoadFile(ymlFn);
 
-int sysCfgParse(char* xmlFn, char* serverIp, int* serverPort) {
-	TiXmlDocument doc(xmlFn);
-	bool loadOkay = doc.LoadFile();
+    const std::string server_ip = sysCfg["server_ip"].as<std::string>();
+    const int server_port = sysCfg["server_port"].as<int>();
 
-	if (!loadOkay) {
-		printf("file load error %s\n", xmlFn);
-		exit(1);
-	}
-	TiXmlNode* rootConfig = 0;
-	TiXmlNode* sysConfig = 0;
-	TiXmlElement* sysElement = 0;
-
-	// xml parsing
-	rootConfig = doc.FirstChild("SysConfig");
-	assert(rootConfig);
-
-	// server IP addr
-	sysConfig = rootConfig->FirstChild();
-	assert(sysConfig);
-	sysElement = sysConfig->ToElement();
-	assert(sysElement);
-	strcpy(serverIp, sysElement->GetText());
+	// yml parsing
+	strcpy(serverIp, server_ip.c_str());
 	printf("server IP address = %s\n", serverIp);
 
 	// server port
-	sysConfig = sysConfig->NextSibling();
-	assert(sysConfig);
-	sysElement = sysConfig->ToElement();
-	assert(sysElement);
-	*serverPort = atoi(sysElement->GetText());
+	*serverPort = server_port;
 	printf("server Port = %d\n", *serverPort);
 
 	return 0;
 }
 
-int usrCfgParse(char* xmlFn, cfgData_t* cfg) {
+int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
 	char opModeStr[64];
 
-	TiXmlDocument doc(xmlFn);
-	bool loadOkay = doc.LoadFile();
+    YAML::Node usrCfg = YAML::LoadFile(ymlFn);
 
-	if (!loadOkay) {
-		printf("file load error %s\n", xmlFn);
-		exit(1);
-	}
-	TiXmlNode* rootConfig = 0;
-	TiXmlNode* usrConfig = 0;
-	TiXmlElement* usrElement = 0;
-
-	// xml parsing
-	rootConfig = doc.FirstChild("UsrConfig");
-	assert(rootConfig);
-
-	printf("\n\n============== enode user configuration =============\n");
+    printf("\n\n============== enode user configuration =============\n");
 
 	// logical ID
-	usrConfig = rootConfig->FirstChild();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->logicId = atoi(usrElement->GetText());
-	printf("logcal ID = %d\n", cfg->logicId);
+	const int logicalId = usrCfg["logic_id"].as<int>();
+    cfg->logicId = logicalId;
+	printf("Logical ID = %d\n", cfg->logicId);
 
 	// operation mode
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(opModeStr, usrElement->GetText());
+    const std::string op_mode = usrCfg["op_mode"].as<std::string>();
+	strcpy(opModeStr, op_mode.c_str());
 	if (strcmp("TX/RX", opModeStr) == 0)
 		cfg->opMode = OPMODE_TX_RX;
 	else if (strcmp("TX", opModeStr) == 0)
 		cfg->opMode = OPMODE_TX;
 	else
 		cfg->opMode = OPMODE_RX;
-	printf("opMode = %s\n", opModeStr);
+	printf("Operating Mode = %s\n", opModeStr);
 
 	// macMode directory
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->macMode, usrElement->GetText());
-	printf("macMode = %s\n", cfg->macMode);
+    const std::string mac_mode = usrCfg["mac_mode"].as<std::string>();
+	strcpy(cfg->macMode, mac_mode.c_str());
+	printf("MAC Mode = %s\n", cfg->macMode);
 
 	// tx slot
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->tSlot = atoi(usrElement->GetText());
-	printf("tx slot = %d\n", cfg->tSlot);
+	const int timeSlot = usrCfg["time_slot"].as<int>();
+    cfg->tSlot = timeSlot;
+	printf("Time Slot = %d\n", cfg->tSlot);
 
 	// matlab directory
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->matDir, usrElement->GetText());
-	printf("matDir = %s\n", cfg->matDir);
+	const std::string mat_dir = usrCfg["matlab_dir"].as<std::string>();
+    strcpy(cfg->matDir, mat_dir.c_str());
+	printf("MATLAB Directory = %s\n", cfg->matDir);
 
-	// top matlab file
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->mTopFile, usrElement->GetText());
-	printf("mTopFile = %s\n", cfg->mTopFile);
+	// MATLAB Function File to execute
+    const std::string mat_top = usrCfg["matlab_func"].as<std::string>();
+	strcpy(cfg->mTopFile, mat_top.c_str());
+	printf("MATLAB Function = %s\n", cfg->mTopFile);
 
-	// matlab log analssys file
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->mLogFile, usrElement->GetText());
-	printf("mLogFile = %s\n", cfg->mLogFile);
+	// MATLAB Log Analysis File
+    const std::string mat_log = usrCfg["matlab_log"].as<std::string>();
+	strcpy(cfg->mLogFile, mat_log.c_str());
+	printf("MATLAB Log Parser = %s\n", cfg->mLogFile);
 
 	// nsamps
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->nsamps = atoi(usrElement->GetText());
-	printf("nsamps = %d\n", cfg->nsamps);
+    const int num_samples = usrCfg["num_samples"].as<int>();
+	cfg->nsamps = num_samples;
+	printf("Number of Samples = %d\n", cfg->nsamps);
 
 	// rate
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->rate = atof(usrElement->GetText());
-	printf("rate = %.1f\n", cfg->rate);
+    const double samp_rate = usrCfg["sample_rate"].as<double>();
+	cfg->rate = samp_rate;
+	printf("Sample Rate = %.1f\n Hz", cfg->rate);
 
 	// subdev
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->subdev, usrElement->GetText());
-	printf("subdev = %s\n", cfg->subdev);
+    const std::string sub_dev = usrCfg["subdevice"].as<std::string>();
+	strcpy(cfg->subdev, sub_dev.c_str());
+	printf("Subdevice Spec = %s\n", cfg->subdev);
 
 	// freq
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->freq = atof(usrElement->GetText());
-	printf("freq = %.1f\n", cfg->freq);
+    const double center_freq = usrCfg["freq"].as<double>();
+	cfg->freq = center_freq;
+	printf("Center Frequency = %.1f Hz\n", cfg->freq);
 
 	// txgain
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->txgain = atof(usrElement->GetText());
-	printf("txgain = %.1f\n", cfg->txgain);
+    const double tx_gain = usrCfg["tx_gain"].as<double>();
+	cfg->txgain = tx_gain;
+	printf("Transmit Gain = %.1f dB\n", cfg->txgain);
 
 	// rxgain
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->rxgain = atof(usrElement->GetText());
-	printf("rxgain = %.1f\n", cfg->rxgain);
+    const double rx_gain = usrCfg["rx_gain"].as<double>();
+	cfg->rxgain = rx_gain;
+	printf("Receive Gain = %.1f dB\n", cfg->rxgain);
 
 	// bw
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	cfg->bw = atof(usrElement->GetText());
-	printf("bw = %.1f\n", cfg->bw);
+    const double band_width = usrCfg["bandwidth"].as<double>();
+	cfg->bw = band_width;
+	printf("Bandwidth = %.1f Hz\n", cfg->bw);
 
     // Device Address
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->devAddr, usrElement->GetText());
+    const std::string dev_addr = usrCfg["device_addr"].as<std::string>();
+	strcpy(cfg->devAddr, dev_addr.c_str());
 	printf("Device Address = %s\n", cfg->devAddr);
-    
+
     // Channel Configuration
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->channels, usrElement->GetText());
+    const std::string chan_spec = usrCfg["channels"].as<std::string>();
+	strcpy(cfg->channels, chan_spec.c_str());
 	printf("Channel Spec = %s\n", cfg->channels);
-    
+
     // Channel Configuration
-	usrConfig = usrConfig->NextSibling();
-	assert(usrConfig);
-	usrElement = usrConfig->ToElement();
-	assert(usrElement);
-	strcpy(cfg->antennas, usrElement->GetText());
+    const std::string ant_spec = usrCfg["antennas"].as<std::string>();
+	strcpy(cfg->antennas, ant_spec.c_str());
 	printf("Antenna Spec = %s\n", cfg->antennas);
 
 	printf("=====================================================\n");

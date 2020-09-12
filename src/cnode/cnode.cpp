@@ -428,7 +428,7 @@ int downloadMatFiles() {
 
 		// parse config file
         sysconfMtx.lock();
-		sprintf(cnfFName, "../../usr/cfg/usrconfig_%s.xml", sysConf[cIdx].ipaddr);
+		sprintf(cnfFName, "../../usr/cfg/usrconfig_%s.yml", sysConf[cIdx].ipaddr);
         sysconfMtx.unlock();
 		printf("cnfFName = %s\n", cnfFName);
 		if (access(cnfFName, F_OK) == -1) continue;  // skip if configuration does not exist.
@@ -443,7 +443,7 @@ int downloadMatFiles() {
 
 		// config file copy
         sysconfMtx.lock();
-		sprintf(cbuf, "cp ../../usr/cfg/usrconfig_%s.xml ../../usr/mat/usrconfig.xml", sysConf[cIdx].ipaddr);
+		sprintf(cbuf, "cp ../../usr/cfg/usrconfig_%s.yml ../../usr/mat/usrconfig.yml", sysConf[cIdx].ipaddr);
         sysconfMtx.unlock();
 		system(cbuf);
 

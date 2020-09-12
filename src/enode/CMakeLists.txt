@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 project(enode)
 
 set(SOURCE_FILES enode.cpp)
-set(LIBRARIES "pthread" "tinyxml" "cnfParse")
+set(LIBRARIES "pthread" "cnfParse" "yaml-cpp")
 
 add_compile_options(-DSUDO_MODE)
 

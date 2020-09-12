@@ -25,7 +25,7 @@ typedef struct cfgData_s {
     char antennas[128];
 } cfgData_t;
 
-int sysCfgParse(char *xmlFn, char *serverIp, int *serverPort);
-int usrCfgParse(char *xmlFn, cfgData_t *cfg);
+int sysCfgParse(char *ymlFn, char *serverIp, int *serverPort);
+int usrCfgParse(char *ymlFn, cfgData_t *cfg);
 
 #endif

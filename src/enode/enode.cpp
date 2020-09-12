@@ -129,7 +129,7 @@ void txMsgEnodeDlAck(int ret) {
 }
 
 int rxMsgEnodeDlInd(cMsgEnodeDlInd_t *pload) {
-	char cnfFName[128] = "../mat/usrconfig.xml";
+	char cnfFName[128] = "../mat/usrconfig.yml";
 	char cmdBuf[256];
 	int ret = -1;
 
@@ -349,7 +349,7 @@ void mainLoop() {
 }
 
 int main() {
-	char cnfFName[64] = "sysconfig.xml";
+	char cnfFName[64] = "sysconfig.yml";
 
 	cout << "\n\n";
 	cout << "=================================================\n";

@@ -35,11 +35,9 @@ function cnodeSetup {
 }
 
 function makeSysConfig {
-    (cd $HOME/dev/src/build/enode/bin; echo "<? xml version=\"1.0\" ?>" > sysconfig.xml);
-    (cd $HOME/dev/src/build/enode/bin; echo "<SysConfig>" >> sysconfig.xml);
-    (cd $HOME/dev/src/build/enode/bin; echo "    <ServerIPAddr> $1 </ServerIPAddr>" >> sysconfig.xml); 
-    (cd $HOME/dev/src/build/enode/bin; echo "    <ServerPort> 9000 </ServerPort>" >> sysconfig.xml);
-    (cd $HOME/dev/src/build/enode/bin; echo "</SysConfig>" >> sysconfig.xml);
+    (cd $HOME/dev/src/build/enode/bin; echo "---" > sysconfig.yml);
+    (cd $HOME/dev/src/build/enode/bin; echo "server_ip: $1" >> sysconfig.yml);
+    (cd $HOME/dev/src/build/enode/bin; echo "server_port: 9000" >> sysconfig.yml);
 }
 
 function enodeSysSetup {
@@ -132,9 +130,9 @@ while getopts ":t:c:e:u:i:" opt; do
   esac
 done
 
-if ( [ "$ntype" == "cnode" ] ); then 
+if ( [ "$ntype" == "cnode" ] ); then
     cnodeSetup $cIPAddr
-elif ( [ "$ntype" == "enode" ] ); then  
+elif ( [ "$ntype" == "enode" ] ); then
     makeSysConfig $cIPAddr
     enodeSysSetup $eIPAddr
 elif ( [ "$ntype" == "usr" ] ); then
