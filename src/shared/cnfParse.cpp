@@ -69,7 +69,13 @@ int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
 	printf("MATLAB Function = %s\n", cfg->mTopFile);
 
 	// MATLAB Log Analysis File
-    const std::string mat_log = usrCfg["matlab_log"].as<std::string>();
+    std::string mat_log;
+    try {
+        mat_log = usrCfg["matlab_log"].as<std::string>();
+    }
+    catch (...) {
+        mat_log = "NULL";
+    }
 	strcpy(cfg->mLogFile, mat_log.c_str());
 	printf("MATLAB Log Parser = %s\n", cfg->mLogFile);
 
@@ -81,7 +87,7 @@ int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
 	// rate
     const double samp_rate = usrCfg["sample_rate"].as<double>();
 	cfg->rate = samp_rate;
-	printf("Sample Rate = %.1f\n Hz", cfg->rate);
+	printf("Sample Rate = %.1f Hz\n", cfg->rate);
 
 	// subdev
     const std::string sub_dev = usrCfg["subdevice"].as<std::string>();
