@@ -19,3 +19,6 @@ install(TARGETS enode uControl DESTINATION run/enode/bin/)
 
 # Build matlab sudirectory
 add_subdirectory(mat)
+
+# Build python subdirectory
+add_subdirectory(python)
