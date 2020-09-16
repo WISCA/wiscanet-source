@@ -1,6 +1,10 @@
+import sys
+sys.path.append('../lib/')
 from local_usrp import *
-import time
+#import time
 import matplotlib.pyplot as plt
+
+start_time = float(sys.argv[1])
 
 num_samples = 50000
 num_channels = 1
@@ -12,7 +16,7 @@ logic_id = usrp_radio.logical_id()
 
 test_data = np.random.rand(num_samples, num_channels) + np.random.rand(num_samples, num_channels) * 1j
 
-start_time = int(time.time()) + 3.0
+#start_time = int(time.time()) + 3.0
 
 #usrp_radio.tx_usrp(start_time, test_data, num_channels)
 

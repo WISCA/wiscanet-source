@@ -43,7 +43,6 @@ class LocalUSRP:
         total_tx = 0
         tx_len = 0
         tx_unit = 4095
-        print(len(byte_buff))
         while (total_tx < len(byte_buff)):
             if ((len(byte_buff) - total_tx) > tx_unit ):
                 tx_len = tx_unit
@@ -65,7 +64,6 @@ class LocalUSRP:
         self.rx_udp_con.sendto(bytearray(struct.pack("H",num_chans)), (self.UCONTROL_IP, self.RX_PORTCON))
         rx_unit = 4000*2
         input_len = num_chans * self.req_num_samps * 4
-        print("Input Length: %d" % input_len)
         buf_pos = 0
         byte_buff = bytearray()
         while True:
@@ -76,7 +74,6 @@ class LocalUSRP:
                 byte_buff.extend(bytearray(temp_buff))
                 if (retval == 0):
                     print("[Local USRP] Completed one receiving cycle\n")
-                print(buf_pos)
 
             readlen = retval if retval > 0 else 0
             buf_pos = buf_pos + readlen

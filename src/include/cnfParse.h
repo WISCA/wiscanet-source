@@ -5,6 +5,9 @@
 #define OPMODE_TX 2
 #define OPMODE_RX 3
 
+#define LANG_MATLAB 1
+#define LANG_PYTHON 2
+
 typedef struct cfgData_s {
 	int logicId;
 	int opMode;
@@ -23,6 +26,7 @@ typedef struct cfgData_s {
     char devAddr[128];
     char channels[128];
     char antennas[128];
+    int lang;
 } cfgData_t;
 
 int sysCfgParse(char *ymlFn, char *serverIp, int *serverPort);

@@ -58,6 +58,16 @@ int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
     cfg->tSlot = timeSlot;
 	printf("Time Slot = %d\n", cfg->tSlot);
 
+    // Programming Language
+    const std::string lang = usrCfg["lang"].as<std::string>();
+    if (strcmp("python", lang.c_str()) == 0)
+        cfg->lang = LANG_PYTHON;
+    else if (strcmp("matlab", lang.c_str()) == 0)
+        cfg->lang = LANG_MATLAB;
+    else
+        cfg->lang = LANG_MATLAB; // Fall back to MATLAB as default langauge
+    printf("Runtime Environment: %s\n", lang.c_str());
+
 	// matlab directory
 	const std::string mat_dir = usrCfg["matlab_dir"].as<std::string>();
     strcpy(cfg->matDir, mat_dir.c_str());
