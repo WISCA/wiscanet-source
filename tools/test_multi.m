@@ -13,26 +13,8 @@ sine2 = exp(1i*2*pi*fc2*t).';
 numChans = 1;
 sineChan = [sine];
 
-test_usrp.tx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+5,sineChan,numChans);
+%test_usrp.tx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+5,sineChan,numChans);
 
-%rxChans = test_usrp.rx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+3,numChans);
+rxChans = test_usrp.rx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+3,numChans);
 
 test_usrp.terminate_usrp();
-% 
-% figure(1);
-% title("Absolute Value of Each Channel");
-% subplot(2,1,1);
-% plot(abs(rxChans(10000:11024,1)));
-% title("Channel 1");
-% subplot(2,1,2);
-% plot(abs(rxChans(10000:11024,2)));
-% title("Channel 2");
-% 
-% figure(2);
-% title("Phase of Each Channel");
-% subplot(2,1,1);
-% plot(phase(rxChans(10000:11024,1)));
-% title("Channel 1");
-% subplot(2,1,2);
-% plot(phase(rxChans(10000:11024,2)));
-% title("Channel 2");

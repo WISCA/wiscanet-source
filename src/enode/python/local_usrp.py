@@ -60,9 +60,36 @@ class LocalUSRP:
 
     def rx_usrp(self, start_time, num_chans):
         print("[Local USRP] Receiving at %f for %d channels\n" % (start_time, num_chans))
-        rx_buff = []
+        # Control Receive (aka send the start_time)
+        self.rx_udp_con.sendto(bytearray(struct.pack("dd",start_time,0)), (self.UCONTROL_IP, self.RX_PORTCON)) # This has to send that zeroed second buffer, because the uControl/MEX version is sloppy
+        self.rx_udp_con.sendto(bytearray(struct.pack("H",num_chans)), (self.UCONTROL_IP, self.RX_PORTCON))
+        rx_unit = 4000*2
+        input_len = num_chans * self.req_num_samps * 4
+        print("Input Length: %d" % input_len)
+        buf_pos = 0
+        byte_buff = bytearray()
+        while True:
+            readlen = input_len - buf_pos
+            if (readlen > 0):
+                (temp_buff,_) = self.rx_udp.recvfrom(rx_unit)
+                retval = len(temp_buff)
+                byte_buff.extend(bytearray(temp_buff))
+                if (retval == 0):
+                    print("[Local USRP] Completed one receiving cycle\n")
+                print(buf_pos)
+
+            readlen = retval if retval > 0 else 0
+            buf_pos = buf_pos + readlen
+
+            if (buf_pos >= input_len):
+                break
+
+        rx_buff = np.frombuffer(byte_buff,np.short)
+        rx_buff_scaled = rx_buff / 2**15
+        rx_buff_complex = rx_buff_scaled[::2] + rx_buff_scaled[1::2] * 1j
+        rx_buff_chans = rx_buff_complex.reshape((self.req_num_samps, num_chans))
         print("[Local USRP] Finished receiving %d complex samples at time %f\n" % (len(rx_buff), start_time))
-        return rx_buff
+        return rx_buff_chans
 
     def terminate_usrp(self):
         self.rx_udp.close()

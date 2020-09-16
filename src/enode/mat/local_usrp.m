@@ -51,7 +51,7 @@ classdef local_usrp
             rxBuff = double(rxdat) / 2^15;
             rxWavComplex = complex(rxBuff(1:2:end),rxBuff(2:2:end));
             rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
-            fprintf('[Local USRP] Finished reciving %d complex samples at time %f\n', len/2, start_time);
+            fprintf('[Local USRP] Finished reciving %d complex samples at time %f\n', len, start_time);
 
         end
         %===========================================================
