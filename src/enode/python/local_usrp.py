@@ -15,9 +15,9 @@ class LocalUSRP:
 
     def __init__(self, numsamples):
         self.req_num_samps = numsamples
-        print("Connecting Transmit Controller (Port: 9940)\n")
+        print("Connecting Transmit Controller (Port: 9940)\n", flush=True)
         self.tx_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print("Connecting Receive Controller (Ports: 9944, 9945)\n")
+        print("Connecting Receive Controller (Ports: 9944, 9945)\n", flush=True)
         self.rx_udp_con = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rx_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.rx_udp.bind((self.UCONTROL_IP, self.RX_PORT))
@@ -25,7 +25,7 @@ class LocalUSRP:
     def logical_id(self):
         f_id = open('logicId', 'r')
         logic_id = int(f_id.read())
-        print("Node Logical ID: %d\n" % logic_id)
+        print("Node Logical ID: %d\n" % logic_id, flush=True)
         f_id.close()
         return logic_id
 
@@ -39,7 +39,7 @@ class LocalUSRP:
         interleaved_tx_buff[::2] = tx_buff.real
         interleaved_tx_buff[1::2] = tx_buff.imag
         # in original right here we do a single(transpose(interleaved_tx_buff))
-        print("[Local USRP] Transmitting at %f, %d bytes (%d samples)\n" % (start_time, len(interleaved_tx_buff), self.req_num_samps))
+        print("[Local USRP] Transmitting at %f, %d bytes (%d samples)\n" % (start_time, len(interleaved_tx_buff), self.req_num_samps), flush=True)
         byte_buff = interleaved_tx_buff.astype(np.single).tobytes()
         total_tx = 0
         tx_len = 0
@@ -60,10 +60,10 @@ class LocalUSRP:
         while time.time() < start_time:
             time.sleep(200/1000000.0)
 
-        print("[Local USRP] Finished transmitting\n")
+        print("[Local USRP] Finished transmitting\n", flush=True)
 
     def rx_usrp(self, start_time, num_chans):
-        print("[Local USRP] Receiving at %f for %d channels\n" % (start_time, num_chans))
+        print("[Local USRP] Receiving at %f for %d channels\n" % (start_time, num_chans), flush=True)
         # Control Receive (aka send the start_time)
         self.rx_udp_con.sendto(bytearray(struct.pack("dd",start_time,0)), (self.UCONTROL_IP, self.RX_PORTCON)) # This has to send that zeroed second buffer, because the uControl/MEX version is sloppy
         self.rx_udp_con.sendto(bytearray(struct.pack("H",num_chans)), (self.UCONTROL_IP, self.RX_PORTCON))
@@ -78,7 +78,7 @@ class LocalUSRP:
                 retval = len(temp_buff)
                 byte_buff.extend(bytearray(temp_buff))
                 if (retval == 0):
-                    print("[Local USRP] Completed one receiving cycle\n")
+                    print("[Local USRP] Completed one receiving cycle\n", flush=True)
 
             readlen = retval if retval > 0 else 0
             buf_pos = buf_pos + readlen
@@ -90,28 +90,11 @@ class LocalUSRP:
         rx_buff_scaled = rx_buff / 2**15
         rx_buff_complex = rx_buff_scaled[::2] + rx_buff_scaled[1::2] * 1j
         rx_buff_chans = rx_buff_complex.reshape((self.req_num_samps, num_chans))
-        print("[Local USRP] Finished receiving %d complex samples at time %f\n" % (len(rx_buff), start_time))
+        print("[Local USRP] Finished receiving %d complex samples at time %f\n" % (len(rx_buff), start_time), flush=True)
         return rx_buff_chans
 
     def terminate_usrp(self):
         self.rx_udp.close()
         self.rx_udp_con.close()
         self.tx_udp.close()
-        print("[Local USRP] Connections have been shutdown.\n")
-
-            #        function rxWav = rx_usrp(this,start_time, num_channels)
-            #            % This returns a num_samps x num_channels complex double matrix
-            #            fprintf('[Local USRP] Receiving at %f for %d channels\n', start_time, num_channels);
-            #            rx_comp_unit =  this.request_num_samps;
-            #            rx_short_unit = rx_comp_unit * 2;
-            #
-            #            [len, rdat] = local_usrp_mex('read',rx_short_unit,start_time,num_channels);
-            #            rxdat = rdat;
-            #
-            #            rx_buff = double(rxdat) / 2^15;
-            #            rxWavComplex = complex(rx_buff(1:2:end),rx_buff(2:2:end));
-            #            rxWav = reshape(rxWavComplex,this.request_num_samps,[]);
-            #            fprintf('[Local USRP] Finished reciving %d complex samples at time %f\n', len/2, start_time);
-            #
-            #        end
-            # Return variable is req_num_samps x num_chans complex matrix
+        print("[Local USRP] Connections have been shutdown.\n", flush=True)
