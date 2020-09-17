@@ -1,6 +1,7 @@
 import socket
 import numpy as np
 import struct
+import time
 
 class LocalUSRP:
     req_num_samps = 50000 # Number of samples requested
@@ -55,6 +56,10 @@ class LocalUSRP:
         self.tx_udp.sendto(bytearray(struct.pack("d",start_time)), (self.UCONTROL_IP, self.TX_PORT))
         self.tx_udp.sendto(bytearray(struct.pack("Q",num_chans)), (self.UCONTROL_IP, self.TX_PORT))
         self.tx_udp.sendto(b'', (self.UCONTROL_IP, self.TX_PORT))
+
+        while time.time() < start_time:
+            time.sleep(200/1000000.0)
+
         print("[Local USRP] Finished transmitting\n")
 
     def rx_usrp(self, start_time, num_chans):
