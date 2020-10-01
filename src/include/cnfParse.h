@@ -1,13 +1,24 @@
 #ifndef __CNF_PARSE_HPP__
 #define __CNF_PARSE_HPP__
 
+/*
+ * Operational mode defines for transmit/receive mode
+ */
 #define OPMODE_TX_RX 1
 #define OPMODE_TX 2
 #define OPMODE_RX 3
 
+/*
+ * Language defines for baseband type
+ */
 #define LANG_MATLAB 1
 #define LANG_PYTHON 2
 
+/*! \typedef struct cfgData_s
+ * \brief This structure contains edge node configuration information
+ *
+ * This structure contains all the parameters read in from the configuration files, and their translations to parameters for each edge node.
+ */
 typedef struct cfgData_s {
 	int logicId;
 	int opMode;
