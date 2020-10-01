@@ -23,10 +23,10 @@ typedef struct cfgData_s {
 	double txgain;
 	double rxgain;
 	double bw;
-    char devAddr[128];
-    char channels[128];
-    char antennas[128];
-    int lang;
+	char devAddr[128];
+	char channels[128];
+	char antennas[128];
+	int lang;
 } cfgData_t;
 
 int sysCfgParse(char *ymlFn, char *serverIp, int *serverPort);
