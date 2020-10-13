@@ -6,8 +6,6 @@
 - src - Source code and CMakefiles/Makefiles
 - tools
   - grc - Provides GNURadio flowgraphs for monitoring
-  - install - Provides scripts to install the system on nodes
-  - security - Provides scripts for configuration SSH between nodes
 
 ## Building WISCANET
 
@@ -41,6 +39,7 @@
   - 9945 - uControl RC
 
 ## Future Ideas
+
 - UHD 4.0 has a Power API, this can be used to calibrate input/output power levels, and know something about absolute received/transmitted power, we currently use UHD v3.15.0.0, but should be a straightforward upgrade
 - Monostatic Radar option?  Single node transmits/receives in the same cycle...
 - Does tx_usrp object need to exist?  If so, does it actually need to also have synch_to_gps called on it?

@@ -1,4 +1,4 @@
-# User Experience (UX) and User Interface (UI) notes
+# User Experience (UX) and User Interface (UI) Notes
 
 ## Currently have following options and commands
 
@@ -24,13 +24,12 @@
 - Interface to manage active nodes in iplist
 - Graphical Interface to control the system
 
-
 ## Comprehensive (Holy Grail) Interface
 
 - Should be able to completely control enodes (no separate enode log-in required)
 - Should be able to stream logs from enodes (no separate enode log-in required)
 - Should be able to configure XML files graphically and simply
- - Should be able to configure all options, including complex USRP configurations
+  - Should be able to configure all options, including complex USRP configurations
 - Should be able to easily control targeted enodes
 - Should be able to support arbitrary project/program location for collection and copying to enodes, within some specified project layout
 - Should support log/data collection from nodes
