@@ -30,7 +30,7 @@
 - Boost v1.67 or greater
 - UHD preferably v3.15 or greater (min tested currently)
 - OpenSSL or other `-lssl -lcrypto` options
-- TinyXML (including Development Headers)
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp) (including Development Headers)
 - Ports on control node (Listen on LAN)
   - 9000 - Control Node Server
 - Ports on edge node (Listen on localhost)
