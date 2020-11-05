@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0] - 2020-11-05
+
+### Added
+- Python baseband support
+
+### Changed
+- Converted from XML to YML configuration
+
 ## [0.8.0] - 2020-07-09
 
 ### Added
