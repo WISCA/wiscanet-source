@@ -1,6 +1,17 @@
-# User Experience (UX) and User Interface (UI) Notes
+## Development Notes
 
-## Currently have following options and commands
+## Future Ideas
+
+- UHD 4.0 has a Power API, this can be used to calibrate input/output power levels, and know something about absolute received/transmitted power, we currently use UHD v3.15.0.0, but should be a straightforward upgrade
+- Monostatic Radar option?  Single node transmits/receives in the same cycle...
+- Does tx_usrp object need to exist?  If so, does it actually need to also have synch_to_gps called on it?
+- A version of local_usrp that doesn't use MEX, as MATLAB has built-in UDP connection primitives
+- Improving the UDP interface between uControl and the MEX - usrp_command structure potentially?
+
+
+## User Experience (UX) and User Interface (UI) Notes
+
+### Currently have following options and commands
 
 - remote control menu (a) - don't know how well this works...untested
 
@@ -18,13 +29,13 @@
 - log analysis (broken feature)
 - exit (0)
 
-## Things we probably want
+### Things we probably want
 
 - Interface to manage XML files and configuration
 - Interface to manage active nodes in iplist
 - Graphical Interface to control the system
 
-## Comprehensive (Holy Grail) Interface
+### Comprehensive (Holy Grail) Interface
 
 - Should be able to completely control enodes (no separate enode log-in required)
 - Should be able to stream logs from enodes (no separate enode log-in required)

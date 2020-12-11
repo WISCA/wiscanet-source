@@ -4,8 +4,15 @@
 
 - doc - Source code documentation
 - src - Source code and CMakefiles/Makefiles
+  - cnode - Control Node source
+  - enode - Edge Node source
+    - mat - MATLAB Integration library
+    - python - Python Integration library
+  - include - Headers
+  - shared - Shared library source
 - tools
   - grc - Provides GNURadio flowgraphs for monitoring
+  - tests - Provides MATLAB and Python test scripts for use with uControl to verify multi-channel operation
 
 ## Building WISCANET
 
@@ -37,15 +44,8 @@
   - 9940 - uControl TX
   - 9944 - uControl RX
   - 9945 - uControl RC
-
-## Future Ideas
-
-- UHD 4.0 has a Power API, this can be used to calibrate input/output power levels, and know something about absolute received/transmitted power, we currently use UHD v3.15.0.0, but should be a straightforward upgrade
-- Monostatic Radar option?  Single node transmits/receives in the same cycle...
-- Does tx_usrp object need to exist?  If so, does it actually need to also have synch_to_gps called on it?
-- A version of local_usrp that doesn't use MEX, as MATLAB has built-in UDP connection primitives
-- Improving the UDP interface between uControl and the MEX - usrp_command structure potentially?
-
+- MATLAB or Python for baseband execution on edge nodes
+  - Both subsystems provided in edge node source, requires `matlab` or `python` (or both) on `$PATH`.
 
 # Legal
 Copyright 2017 - 2020, WISCANET contributors
