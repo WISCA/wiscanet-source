@@ -787,8 +787,8 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 
 	// print the help message
 	if (vm.count("help")) {
-		std::cout << boost::format("WISCANET USRP Controller %s") % desc << std::endl;
-		std::cout << std::endl << "This is the WISCANET USRP Controller\n" << std::endl;
+		std::cout << boost::format("WISCANet USRP Controller %s") % desc << std::endl;
+		std::cout << std::endl << "This is the WISCANet USRP Controller\n" << std::endl;
 		return ~0;
 	}
 

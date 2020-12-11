@@ -1,7 +1,7 @@
-# Contributing to WISCANET
+# Contributing to WISCANet
 
 ## Welcome
-Thank you for taking the time to contribute and the interest in WISCANET!
+Thank you for taking the time to contribute and the interest in WISCANet!
 
 ## How Can I Contribute?
 

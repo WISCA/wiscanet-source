@@ -1,4 +1,4 @@
-# WISCANET
+# WISCANet
 
 ### Directory Structure
 
@@ -14,7 +14,7 @@
   - grc - Provides GNURadio flowgraphs for monitoring
   - tests - Provides MATLAB and Python test scripts for use with uControl to verify multi-channel operation
 
-## Building WISCANET
+## Building WISCANet
 
 - create `src/build` directory tree as needed
 - run `cmake ../` from inside `src/build`
@@ -24,7 +24,7 @@
 
 ### User Documentation
 
-- Documentation on developing applications and running WISCANET can be found here: [wiscanet_manual.pdf](https://gitbliss.asu.edu/jholtom/wiscanet-docs/src/master/wiscanet_manual.pdf)
+- Documentation on developing applications and running WISCANet can be found here: [wiscanet_manual.pdf](https://gitbliss.asu.edu/jholtom/wiscanet-docs/src/master/wiscanet_manual.pdf)
 
 ### Code Documentation
 
@@ -48,4 +48,4 @@
   - Both subsystems provided in edge node source, requires `matlab` or `python` (or both) on `$PATH`.
 
 # Legal
-Copyright 2017 - 2020, WISCANET contributors
+Copyright 2017 - 2020, WISCANet contributors

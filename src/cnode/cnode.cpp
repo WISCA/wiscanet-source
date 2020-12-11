@@ -986,7 +986,7 @@ int main() {
 				case 0:
 					enodeTermReq();
 					cout << endl;
-					cout << "WISCANET is shutting down..." << endl;
+					cout << "WISCANet is shutting down..." << endl;
 					sleep(1);
 					// Set atomic shutdown flag for controller thread
 					shutdownFlag = true;
