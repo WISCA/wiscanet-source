@@ -24,7 +24,7 @@
 
 ### User Documentation
 
-- Documentation on developing applications and running WISCANet can be found here: [wiscanet_manual.pdf](docs/wiscanet_manual.pdf)
+- Documentation on developing applications and running WISCANet can be found here: [wiscanet_manual.pdf](doc/wiscanet_manual.pdf)
 
 ### Code Documentation
 
