@@ -45,18 +45,13 @@
 #define RX_PORT 9944
 #define RC_PORT 9945
 
-#define MAX_SLOT 4
-
 #define recv_worker_args(format)                                                                           \
 	(usrp, format, wirefmt, file, spb, total_num_samps, channel_nums, total_time, bw_summary, stats, null, \
 	 enable_size_map, continue_on_bad_packet)
 
 namespace po = boost::program_options;
-namespace po = boost::program_options;
 namespace pt = boost::posix_time;
-typedef boost::function<uhd::sensor_value_t(const std::string &)> get_sensor_fn_t;
-
-double sched_unit = 0.25;
+typedef std::function<uhd::sensor_value_t(const std::string&)> get_sensor_fn_t;
 
 static bool stop_signal_called = false;
 void sig_int_handler(int) { stop_signal_called = true; }
@@ -245,8 +240,6 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 		printf("[USRP Control] Sent at time=%f, len=%ld (samples) \r\n", time_now.get_real_secs(), txTotal);
 	}
 }
-
-typedef boost::function<uhd::sensor_value_t(const std::string &)> get_sensor_fn_t;
 
 bool check_locked_sensor(std::vector<std::string> sensor_names, const char *sensor_name, get_sensor_fn_t get_sensor_fn,
                          double setup_time) {
