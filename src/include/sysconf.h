@@ -16,7 +16,6 @@ struct nodeInfo {
 	char ipaddr[32];
 	opState_t opState;
 	int usrFlag = 0;
-	char macMode[128] = "UMAC";
 	char matDir[128] = ".";
 	char mLogFile[64] = "NULL";
 };

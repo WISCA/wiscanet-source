@@ -22,8 +22,6 @@
 typedef struct cfgData_s {
 	int logicId;
 	int opMode;
-	char macMode[128];
-	int tSlot;
 	char matDir[128];
 	char mTopFile[128];
 	char mLogFile[128];

@@ -47,16 +47,6 @@ int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
 		cfg->opMode = OPMODE_RX;
 	printf("Operating Mode = %s\n", opModeStr);
 
-	// macMode directory
-	const std::string mac_mode = usrCfg["mac_mode"].as<std::string>();
-	strcpy(cfg->macMode, mac_mode.c_str());
-	printf("MAC Mode = %s\n", cfg->macMode);
-
-	// tx slot
-	const int timeSlot = usrCfg["time_slot"].as<int>();
-	cfg->tSlot = timeSlot;
-	printf("Time Slot = %d\n", cfg->tSlot);
-
 	// Programming Language
 	const std::string lang = usrCfg["lang"].as<std::string>();
 	if (strcmp("python", lang.c_str()) == 0)
