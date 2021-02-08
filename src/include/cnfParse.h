@@ -17,7 +17,8 @@
 /*! \typedef struct cfgData_s
  * \brief This structure contains edge node configuration information
  *
- * This structure contains all the parameters read in from the configuration files, and their translations to parameters for each edge node.
+ * This structure contains all the parameters read in from the configuration files, and their translations to parameters
+ * for each edge node.
  */
 typedef struct cfgData_s {
 	int logicId;
