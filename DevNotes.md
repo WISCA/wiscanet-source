@@ -7,7 +7,7 @@
 - Does tx_usrp object need to exist?  If so, does it actually need to also have synch_to_gps called on it?
 - A version of local_usrp that doesn't use MEX, as MATLAB has built-in UDP connection primitives
 - Improving the UDP interface between uControl and the MEX - usrp_command structure potentially?
-
+- fix relative paths (some highlighted with TODOs), add configuration files and proper directory organization
 
 ## User Experience (UX) and User Interface (UI) Notes
 

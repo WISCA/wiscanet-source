@@ -394,7 +394,8 @@ int downloadMatFiles() {
 	char ipaddr[128];
 	cfgData_t cfg;
 
-	fp = fopen("../../usr/cfg/iplist", "r");
+	fp = fopen("../../usr/cfg/iplist", "r"); //TODO -  make this robust and actually use the current user's home path.
+    //TODO - add a configuration file, and make it have configurable file locations
 	if (fp == NULL) {
 		printf("failed to open usr/cfg/iplist\n");
 		return -1;
@@ -432,6 +433,7 @@ int downloadMatFiles() {
 
 		// parse config file
 		sysconfMtx.lock();
+        //TODO - same thing here, make it look in a config directory, or users home path, rather than something relative
 		sprintf(cnfFName, "../../usr/cfg/usrconfig_%s.yml", sysConf[cIdx].ipaddr);
 		sysconfMtx.unlock();
 		printf("cnfFName = %s\n", cnfFName);
