@@ -57,12 +57,12 @@ static bool stop_signal_called = false;
 void sig_int_handler(int) { stop_signal_called = true; }
 
 template <typename samp_type>
-void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format, const std::string &wire_format,
+void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format, const std::string &wire_format,
                       const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
                       std::vector<size_t> channel_nums, double time_requested = 0.0, bool bw_summary = false,
                       bool stats = false, bool null = false, bool enable_size_map = false,
                       bool continue_on_bad_packet = false) {
-	std::cout << "================== RX UMAC worker =================\n";
+	std::cout << "================== Receive Worker =================\n";
 	// time variables for scheduling
 	uhd::time_spec_t time_now, rxTime;
 
@@ -241,42 +241,46 @@ void recv_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_f
 	}
 }
 
-bool check_locked_sensor(std::vector<std::string> sensor_names, const char *sensor_name, get_sensor_fn_t get_sensor_fn,
-                         double setup_time) {
-	if (std::find(sensor_names.begin(), sensor_names.end(), sensor_name) == sensor_names.end()) return false;
+bool check_locked_sensor(std::vector<std::string> sensor_names,
+    const char* sensor_name,
+    get_sensor_fn_t get_sensor_fn,
+    double setup_time)
+{
+    if (std::find(sensor_names.begin(), sensor_names.end(), sensor_name)
+        == sensor_names.end())
+        return false;
 
-	boost::system_time start = boost::get_system_time();
-	boost::system_time first_lock_time;
+    auto setup_timeout = std::chrono::steady_clock::now()
+                         + std::chrono::milliseconds(int64_t(setup_time * 1000));
+    bool lock_detected = false;
 
-	std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
-	std::cout.flush();
+    std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
+    std::cout.flush();
 
-	while (true) {
-		if ((not first_lock_time.is_not_a_date_time()) and
-		    (boost::get_system_time() >
-		     (first_lock_time + boost::posix_time::seconds{static_cast<long>(setup_time)}))) {
-			std::cout << " locked." << std::endl;
-			break;
-		}
-		if (get_sensor_fn(sensor_name).to_bool()) {
-			if (first_lock_time.is_not_a_date_time()) first_lock_time = boost::get_system_time();
-			std::cout << "+";
-			std::cout.flush();
-		} else {
-			first_lock_time = boost::system_time();  // reset to 'not a date time'
-
-			if (boost::get_system_time() > (start + boost::posix_time::seconds{static_cast<long>(setup_time)})) {
-				std::cout << std::endl;
-				throw std::runtime_error(
-				    str(boost::format("timed out waiting for consecutive locks on sensor \"%s\"") % sensor_name));
-			}
-			std::cout << "_";
-			std::cout.flush();
-		}
-		boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-	}
-	std::cout << std::endl;
-	return true;
+    while (true) {
+        if (lock_detected and (std::chrono::steady_clock::now() > setup_timeout)) {
+            std::cout << " locked." << std::endl;
+            break;
+        }
+        if (get_sensor_fn(sensor_name).to_bool()) {
+            std::cout << "+";
+            std::cout.flush();
+            lock_detected = true;
+        } else {
+            if (std::chrono::steady_clock::now() > setup_timeout) {
+                std::cout << std::endl;
+                throw std::runtime_error(
+                    str(boost::format(
+                            "timed out waiting for consecutive locks on sensor \"%s\"")
+                        % sensor_name));
+            }
+            std::cout << "_";
+            std::cout.flush();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    std::cout << std::endl;
+    return true;
 }
 
 uhd::time_spec_t get_system_time(void) {
@@ -374,8 +378,8 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	return 0;
 }
 
-void transmit_UMAC_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, std::vector<size_t> channel_nums) {
-	std::cout << "================== TX UMAC worker =================\n";
+void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, std::vector<size_t> channel_nums) {
+	std::cout << "================== Transmit Worker =================\n";
 
 	// variables for timer
 	uhd::time_spec_t txTime, time_now, prev_txtime;
@@ -727,15 +731,15 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	// start thread
 	if (opmode == "TX/RX" || opmode == "TX") {
 		boost::thread_group transmit_thread;
-		transmit_thread.create_thread(boost::bind(&transmit_UMAC_worker, tx_usrp, total_num_samps, channel_nums));
+		transmit_thread.create_thread(boost::bind(&transmit_worker, tx_usrp, total_num_samps, channel_nums));
 	}
 	if (opmode == "TX/RX" || opmode == "RX") {
 		if (type == "double")
-			recv_UMAC_worker<std::complex<double>> recv_worker_args("fc64");
+			recv_worker<std::complex<double>> recv_worker_args("fc64");
 		else if (type == "float")
-			recv_UMAC_worker<std::complex<float>> recv_worker_args("fc32");
+			recv_worker<std::complex<float>> recv_worker_args("fc32");
 		else if (type == "short")
-			recv_UMAC_worker<std::complex<short>> recv_worker_args("sc16");
+			recv_worker<std::complex<short>> recv_worker_args("sc16");
 		else
 			throw std::runtime_error("Unknown type " + type);
 	} else {
