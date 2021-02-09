@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.1] - 2021-02-08
+
+### Added
+- Support for UHD v4.0.0
+
+### Changed
+- Updated sensor checking code
+- Renamed and refactored parts of uControl
+
+### Removed
+- Support for unused TDMA mode (no more macmode or tslot options), as behavior is a subset of the standard workers, thus reduces code duplication.
+
 ## [0.9.0] - 2020-11-05
 
 ### Added
