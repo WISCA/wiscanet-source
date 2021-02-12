@@ -3,9 +3,19 @@ project(enode_mat)
 
 find_package(Matlab)
 
-matlab_add_mex(NAME local_usrp_mex SRC local_usrp_mex.c)
+if(Matlab_Found)
+    set(ENABLE_MATLAB TRUE)
+else()
+    set(ENABLE_MATLAB FALSE)
+endif()
 
-configure_file(local_usrp.m local_usrp.m COPYONLY)
+if(ENABLE_MATLAB)
 
-install(TARGETS local_usrp_mex DESTINATION run/enode/mat/lib/)
-install(FILES local_usrp.m DESTINATION run/enode/mat/lib/)
+    matlab_add_mex(NAME local_usrp_mex SRC local_usrp_mex.c)
+
+    configure_file(local_usrp.m local_usrp.m COPYONLY)
+
+    install(TARGETS local_usrp_mex DESTINATION run/enode/mat/lib/)
+    install(FILES local_usrp.m DESTINATION run/enode/mat/lib/)
+
+endif(ENABLE_MATLAB)
