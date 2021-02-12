@@ -289,13 +289,6 @@ bool check_locked_sensor(std::vector<std::string> sensor_names,
     return true;
 }
 
-uhd::time_spec_t get_system_time(void) {
-	pt::ptime time_now = pt::microsec_clock::universal_time();
-	pt::time_duration time_dur = time_now - pt::from_time_t(0);
-	return uhd::time_spec_t(time_t(time_dur.total_seconds()), long(time_dur.fractional_seconds()),
-	                        double(pt::time_duration::ticks_per_second()));
-}
-
 int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	int gps_unlocked = 0;
 
@@ -355,7 +348,7 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	}
 
 	// Set to GPS time
-	uhd::time_spec_t gps_time = uhd::time_spec_t(time_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
+	uhd::time_spec_t gps_time = uhd::time_spec_t(int64_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
 	usrp->set_time_next_pps(gps_time + 1.0, 0);
 	if (numMB > 1) {
 		std::cout << "Now syncing the rest of the motherboards to the master's GPS time" << std::endl;
@@ -372,7 +365,7 @@ int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
 	boost::this_thread::sleep(boost::posix_time::seconds(2));
 
 	// Check times
-	gps_time = uhd::time_spec_t(time_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
+	gps_time = uhd::time_spec_t(int64_t(usrp->get_mboard_sensor("gps_time", 0).to_int()));
 	uhd::time_spec_t time_last_pps = usrp->get_time_last_pps(0);
 	std::cout << "USRP time: " << (boost::format("%0.9f") % time_last_pps.get_real_secs()) << std::endl;
 	std::cout << "GPSDO time: " << (boost::format("%0.9f") % gps_time.get_real_secs()) << std::endl;
