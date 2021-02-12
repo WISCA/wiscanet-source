@@ -45,6 +45,12 @@
 #define RX_PORT 9944
 #define RC_PORT 9945
 
+typedef struct __attribute__((__packed__)) {
+    double startTime;
+    size_t numChans;
+    int16_t refPower;
+} transmit_controlfmt;
+
 #define recv_worker_args(format)                                                                           \
 	(usrp, format, wirefmt, file, spb, total_num_samps, channel_nums, total_time, bw_summary, stats, null, \
 	 enable_size_map, continue_on_bad_packet)
@@ -407,7 +413,10 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-	std::vector<std::complex<float>> buff(total_num_samps * channel_nums.size() + 1000);  // 1000 for control
+    transmit_controlfmt *controlBuf;
+    static_assert(sizeof(transmit_controlfmt) == (sizeof(double) + sizeof(size_t) + sizeof(int16_t))); // Make sure this covers the right memory space
+    // Don't waste space by overextending the buffer
+	std::vector<std::complex<float>> buff(total_num_samps * channel_nums.size() + sizeof(transmit_controlfmt));
 	// information
 	char *udpBuf;
 	size_t rResult;
@@ -416,6 +425,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 	size_t txLen;
 	size_t rSamLen;
 	size_t *numChans;
+    int16_t *refPower;
 	while (1) {
 		udpBuf = (char *)&buff[0];
 		rLen = 0;
@@ -426,15 +436,28 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 			rLen += rResult;
 			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 		} while (rResult > 0);
-		rSamLen = (rLen - sizeof(size_t)) / sizeof(std::complex<float>);
+		rSamLen = (rLen - sizeof(transmit_controlfmt)) / sizeof(std::complex<float>);
 
 		time_now = usrp->get_time_now(0);
-		start_time = (double *)(&buff[0] + rSamLen - 1);
-		numChans = (size_t *)(&buff[0] + rSamLen);
-		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels\n", rLen, rSamLen,
-		       *numChans);
+		//start_time = (double *)(&buff[0] + rSamLen - 1);
+		//numChans = (size_t *)(&buff[0] + rSamLen);
+        controlBuf = (transmit_controlfmt *)(&buff[0] + rSamLen);
+        start_time = &controlBuf->startTime;
+        numChans = &controlBuf->numChans;
+        refPower = &controlBuf->refPower;
+		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels, with reference power %d dBm.\n", rLen, rSamLen,
+		       *numChans, *refPower);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
+
+        // Configure TX Power Reference for all channels
+		for (size_t i = 0; i < *numChans; i++) {
+            try {
+                usrp->set_tx_power_reference(*refPower, i);
+            } catch (uhd::not_implemented_error &e){
+                std::cout << "[USRP Control] Reference Power not supported, falling back to default gain" << std::endl << e.what() << std::endl;
+            }
+        }
 
 		// txtime management
 		txTime = uhd::time_spec_t(*start_time);
@@ -501,7 +524,7 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	    "file", po::value<std::string>(&file)->default_value("usrp_samples.dat"),
 	    "name of the file to write binary samples to")("type", po::value<std::string>(&type)->default_value("short"),
 	                                                   "sample type: double, float, or short")(
-	    "nsamps", po::value<size_t>(&total_num_samps)->default_value(5000), "total number of samples to receive")(
+	    "nsamps", po::value<size_t>(&total_num_samps)->default_value(50000), "total number of samples to receive")(
 	    "duration", po::value<double>(&total_time)->default_value(0), "total number of seconds to receive")(
 	    "time", po::value<double>(&total_time), "(DEPRECATED) will go away soon! Use --duration instead")(
 	    "spb", po::value<size_t>(&spb)->default_value(10000), "samples per buffer")(

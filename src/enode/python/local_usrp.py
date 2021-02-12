@@ -29,7 +29,7 @@ class LocalUSRP:
         f_id.close()
         return logic_id
 
-    def tx_usrp(self, start_time, input_buff, num_chans):
+    def tx_usrp(self, start_time, input_buff, num_chans, ref_power):
         # input_buff is req_num_samps x num_chans complex matrix
         [in_rows, in_cols] = input_buff.shape # Get shape of input
         assert in_rows == self.req_num_samps
@@ -55,6 +55,7 @@ class LocalUSRP:
 
         self.tx_udp.sendto(bytearray(struct.pack("d",start_time)), (self.UCONTROL_IP, self.TX_PORT))
         self.tx_udp.sendto(bytearray(struct.pack("Q",num_chans)), (self.UCONTROL_IP, self.TX_PORT))
+        self.tx_udp.sendto(bytearray(struct.pack("h",ref_power)), (self.UCONTROL_IP, self.TX_PORT))
         self.tx_udp.sendto(b'', (self.UCONTROL_IP, self.TX_PORT))
 
         while time.time() < start_time:

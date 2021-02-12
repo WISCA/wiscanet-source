@@ -23,7 +23,7 @@ classdef local_usrp
             this.request_num_samps = num_samps;
         end
         %===========================================================
-        function tx_usrp(this,start_time, buff_in, num_channels)
+        function tx_usrp(this,start_time, buff_in, num_channels, ref_power)
             % This expects a num_samps x num_channels complex double matrix
             [inRows, inCols] = size(buff_in);
             assert(inRows == this.request_num_samps,'Wrong number of samples input!');
@@ -35,7 +35,7 @@ classdef local_usrp
             txbuff(2:2:total_samples) = imag(flatBuff);
             tbuf = single(transpose(txbuff));
             fprintf('[Local USRP] Transmitting at %f, %d bytes (%d samples)\n', start_time, length(tbuf), total_samples);
-            local_usrp_mex('write', tbuf, start_time, num_channels);
+            local_usrp_mex('write', tbuf, start_time, num_channels, ref_power);
             fprintf('[Local USRP] Finished transmitting\n');
         end
         %===========================================================
