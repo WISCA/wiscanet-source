@@ -390,7 +390,8 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 
 	// udp socket
 	struct sockaddr_in si_me;
-	int sockfd, slen;
+	int sockfd;
+	socklen_t slen = sizeof(si_me);
 	size_t rLen;
 
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) exit(1);
@@ -427,10 +428,10 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 		do {
 			udpBuf += rResult;
 			rLen += rResult;
-			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, &slen);
 		} while (rResult > 0);
 		rSamLen = (rLen - sizeof(transmit_controlfmt)) / sizeof(std::complex<float>);
-
+		
 		time_now = usrp->get_time_now(0);
 		//start_time = (double *)(&buff[0] + rSamLen - 1);
 		//numChans = (size_t *)(&buff[0] + rSamLen);
