@@ -47,7 +47,7 @@
 
 typedef struct __attribute__((__packed__)) {
     double startTime;
-    size_t numChans;
+    uint16_t numChans;
     int16_t refPower;
 } transmit_controlfmt;
 
@@ -408,7 +408,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 
 	// buffer for transmission
     transmit_controlfmt *controlBuf;
-    static_assert(sizeof(transmit_controlfmt) == (sizeof(double) + sizeof(size_t) + sizeof(int16_t))); // Make sure this covers the right memory space
+    static_assert(sizeof(transmit_controlfmt) == (sizeof(double) + sizeof(uint16_t) + sizeof(int16_t))); // Make sure this covers the right memory space
     // Don't waste space by overextending the buffer
 	std::vector<std::complex<float>> buff(total_num_samps * channel_nums.size() + sizeof(transmit_controlfmt));
 	// information
@@ -418,7 +418,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 	double timeout;
 	size_t txLen;
 	size_t rSamLen;
-	size_t *numChans;
+	uint16_t *numChans;
     int16_t *refPower;
 	while (1) {
 		udpBuf = (char *)&buff[0];
@@ -439,13 +439,13 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
         start_time = &controlBuf->startTime;
         numChans = &controlBuf->numChans;
         refPower = &controlBuf->refPower;
-		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %ld channels, with reference power %d dBm.\n", rLen, rSamLen,
+		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %d channels, with reference power %d dBm.\n", rLen, rSamLen,
 		       *numChans, *refPower);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
         // Configure TX Power Reference for all channels
-		for (size_t i = 0; i < *numChans; i++) {
+		for (uint16_t i = 0; i < *numChans; i++) {
             try {
                 usrp->set_tx_power_reference(*refPower, i);
             } catch (uhd::not_implemented_error &e){
@@ -471,7 +471,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 		std::vector<std::vector<std::complex<float>>> tx_buffers(channel_nums.size(),
 		                                                         std::vector<std::complex<float>>(total_num_samps));
 
-		for (size_t i = 0; i < *numChans; i++) {
+		for (uint16_t i = 0; i < *numChans; i++) {
 			tx_buffers[i].assign(buff.begin() + (i * total_num_samps), buff.begin() + ((i + 1) * total_num_samps));
 		}
 
