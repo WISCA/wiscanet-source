@@ -3,7 +3,7 @@ project(enode_mat)
 
 find_package(Matlab)
 
-if(Matlab_Found)
+if(Matlab_ROOT_DIR)
     set(ENABLE_MATLAB TRUE)
 else()
     set(ENABLE_MATLAB FALSE)
