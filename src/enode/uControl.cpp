@@ -76,7 +76,9 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 
 	// udp socket
 	struct sockaddr_in si_other, si_me;
-	int sockfd, slen;
+	int sockfd;
+	socklen_t slen = sizeof(si_me);
+
 	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) exit(1);
 	memset((char *)&si_other, 0, sizeof(si_other));
 	si_other.sin_family = AF_INET;
@@ -110,11 +112,11 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 	uint16_t numChannels;
 
 	while (1) {
-		rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+		rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, &slen);
 		if (rResult < 0) {
 			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
 		}
-		rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
+		rResult = recvfrom(sockfd, &numChannels, sizeof(uint16_t), 0, (struct sockaddr *)&si_me, &slen);
 		if (rResult < 0) {
 			printf("Receiving number of channels failed (Error %d)\r\n", rResult);
 		}
