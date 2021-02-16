@@ -115,6 +115,10 @@ int recvPacket(char *buf, int len) {
 			retval = recvfrom(rxSockfd, (buf + buf_pos), rxunit, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 
 			if (retval == 0) {
+				if (buf_pos == 0){
+					mexPrintf("[Local USRP Mex] ERROR: Receiving time passed, returning 0 array!\n");
+					break;
+				}
 				mexPrintf("[Local USRP Mex] Completed one receiving cycle\n");
 			}
 			if (retval < 0) {

@@ -79,6 +79,10 @@ class LocalUSRP:
                 retval = len(temp_buff)
                 byte_buff.extend(bytearray(temp_buff))
                 if (retval == 0):
+                    if (buf_pos == 0):
+                        print("[Local USRP] ERROR: Receiving time has passed, returning 0 array!")
+                        byte_buff = bytearray(input_len)
+                        break
                     print("[Local USRP] Completed one receiving cycle\n", flush=True)
 
             readlen = retval if retval > 0 else 0

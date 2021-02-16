@@ -112,6 +112,7 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 	uint16_t numChannels;
 
 	while (1) {
+rx_reset:
 		rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, &slen);
 		if (rResult < 0) {
 			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
@@ -128,8 +129,10 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 		       numChannels);
 
 		if (realRxTime < realNowTime) {
-			printf("[USRP Control] Error: RX time has already passed\n");
-			exit(1);
+			printf("[USRP Control] Error: RX time has already passed, resetting receive loop\n");
+			// Send a zero size packet to do this
+			sendto(sockfd, &rxTime, 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
+			goto rx_reset;
 		}
 
 		timeout = realRxTime - realNowTime + 1;  // Put some slack in there for huge applications, doing MIMO
