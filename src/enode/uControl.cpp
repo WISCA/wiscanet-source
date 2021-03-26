@@ -135,7 +135,7 @@ rx_reset:
 			goto rx_reset;
 		}
 
-		timeout = realRxTime - realNowTime + 1;  // Put some slack in there for huge applications, doing MIMO
+		timeout = realRxTime - realNowTime + 0.1;  // Put some slack in there for huge applications, doing MIMO
 
 		// create a receive streamer
 		uhd::stream_args_t stream_args(cpu_format, wire_format);
