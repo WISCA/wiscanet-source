@@ -569,6 +569,11 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	tx_usrp->set_tx_rate(rate);
 	std::cout << boost::format("Actual TX Rate: %f Msps...") % (tx_usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
 
+    // synchronization
+	synch_to_gps(usrp);
+	// This second one isn't actually necessary, because its acting on the same underlying motherboards.
+	// synch_to_gps(tx_usrp);
+
 	// Detect which channels to use
 	std::vector<std::string> channel_strings;
 	std::vector<size_t> channel_nums;
@@ -723,10 +728,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 		std::cout << "Press Ctrl + C to stop streaming..." << std::endl;
 	}
 
-	// synchronization
-	synch_to_gps(usrp);
-	// This second one isn't actually necessary, because its acting on the same underlying motherboards.
-	// synch_to_gps(tx_usrp);
 
 	// start thread
 	if (opmode == "TX/RX" || opmode == "TX") {
