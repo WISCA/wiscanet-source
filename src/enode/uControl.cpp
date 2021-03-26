@@ -143,7 +143,7 @@ rx_reset:
 		uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
 		uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-		stream_cmd.num_samps = num_requested_samples * channel_nums.size();
+		stream_cmd.num_samps = num_requested_samples;// * channel_nums.size();
 
 		printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(),
 		       usrp->get_rx_num_channels());
