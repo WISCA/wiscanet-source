@@ -558,6 +558,11 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	std::cout << boost::format("Using Device: %s") % usrp->get_pp_string() << std::endl;
 	std::cout << boost::format("Using Device: %s") % tx_usrp->get_pp_string() << std::endl;
 
+    // synchronization
+	synch_to_gps(usrp);
+	// This second one isn't actually necessary, because its acting on the same underlying motherboards.
+	// synch_to_gps(tx_usrp);
+
 	// set the sample rate
 	if (rate <= 0.0) {
 		std::cerr << "Please specify a valid sample rate" << std::endl;
@@ -568,11 +573,6 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	std::cout << boost::format("Actual RX Rate: %f Msps...") % (usrp->get_rx_rate() / 1e6) << std::endl << std::endl;
 	tx_usrp->set_tx_rate(rate);
 	std::cout << boost::format("Actual TX Rate: %f Msps...") % (tx_usrp->get_tx_rate() / 1e6) << std::endl << std::endl;
-
-    // synchronization
-	synch_to_gps(usrp);
-	// This second one isn't actually necessary, because its acting on the same underlying motherboards.
-	// synch_to_gps(tx_usrp);
 
 	// Detect which channels to use
 	std::vector<std::string> channel_strings;
