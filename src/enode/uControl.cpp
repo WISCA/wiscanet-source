@@ -455,6 +455,8 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
                 usrp->set_tx_power_reference(*refPower, i);
             } catch (uhd::not_implemented_error &e){
                 std::cout << "[USRP Control] Reference Power not supported, falling back to default gain" << std::endl << e.what() << std::endl;
+            } catch (uhd::runtime_error &e){
+                std::cout << "[USRP Control] Calibration data not available (Device is uncalibrated), falling back to default gain" << std::endl << e.what() << std::endl;
             }
         }
 
