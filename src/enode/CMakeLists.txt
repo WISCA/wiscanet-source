@@ -10,7 +10,7 @@ add_executable(enode ${SOURCE_FILES})
 target_link_libraries(enode ${LIBRARIES})
 
 set(UCONTROL_SOURCE_FILES uControl.cpp)
-set(UCONTROL_LIBS "pthread" "boost_program_options" "uhd" "boost_thread" "boost_filesystem")
+set(UCONTROL_LIBS "pthread" "boost_program_options" "uhd" "boost_thread" "boost_filesystem" "boost_system")
 
 add_executable(uControl ${UCONTROL_SOURCE_FILES})
 target_link_libraries(uControl ${UCONTROL_LIBS})

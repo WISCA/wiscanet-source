@@ -69,6 +69,10 @@ file(WRITE include/verStr.h
 # Configure Global Compile Options
 add_compile_options(-Wall -Werror=format-security)
 
+# Default language options
+# Python
+set(ENABLE_PYTHON true)
+
 # Configure CPP Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

@@ -62,7 +62,7 @@ void rxInit(char *ipaddr, int portNum, int cportNum) {
 	}
 }
 
-void sendPacket(double start_time, char *buf, int len, size_t numChans) {
+void sendPacket(double start_time, char *buf, int len, size_t numChans, int16_t refPower) {
 	int totalTx = 0, txLen, txUnit = 4095, txResult = -1;
 	struct timespec spec;
 	double ctime;
@@ -81,6 +81,8 @@ void sendPacket(double start_time, char *buf, int len, size_t numChans) {
 	totalTx += sizeof(double);
 	sendto(txSockfd, &numChans, sizeof(numChans), 0, (struct sockaddr *)&si_other, sizeof(si_other));
 	totalTx += sizeof(uint16_t);
+	sendto(txSockfd, &refPower, sizeof(refPower), 0, (struct sockaddr *)&si_other, sizeof(si_other));
+	totalTx += sizeof(int16_t);
 	sendto(txSockfd, buf, 0, 0, (struct sockaddr *)&si_other, sizeof(si_other));
 
 	/* wait tx completion */
@@ -113,6 +115,10 @@ int recvPacket(char *buf, int len) {
 			retval = recvfrom(rxSockfd, (buf + buf_pos), rxunit, 0, (struct sockaddr *)&si_me, (socklen_t *)&slen);
 
 			if (retval == 0) {
+				if (buf_pos == 0){
+					mexPrintf("[Local USRP Mex] ERROR: Receiving time passed, returning 0 array!\n");
+					break;
+				}
 				mexPrintf("[Local USRP Mex] Completed one receiving cycle\n");
 			}
 			if (retval < 0) {
@@ -187,9 +193,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		sBuf = (short *)mxGetData(prhs[1]);
 		start_time = mxGetScalar(prhs[2]);
 		size_t numChans = mxGetScalar(prhs[3]);
-		mexPrintf("[Local USRP Mex] Sending data to USRP Control for transmission at %f,for %d channels\n", start_time,
-		          numChans);
-		sendPacket(start_time, (char *)sBuf, len, numChans);
+		int16_t refPower = mxGetScalar(prhs[4]);
+		mexPrintf("[Local USRP Mex] Sending data to USRP Control for transmission at %f,for %d channels, with reference power: %d dBm\n", start_time,
+		          numChans, refPower);
+		sendPacket(start_time, (char *)sBuf, len, numChans, refPower);
 	} else if (!strcmp("read", cmd)) {
 		if (rxCnSockfd <= 0) {
 			mexPrintf("rx control socket is not ready\n");
