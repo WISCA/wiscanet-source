@@ -46,9 +46,9 @@
 #define RC_PORT 9945
 
 typedef struct __attribute__((__packed__)) {
-    double startTime;
-    uint16_t numChans;
-    int16_t refPower;
+	double startTime;
+	uint16_t numChans;
+	int16_t refPower;
 } transmit_controlfmt;
 
 #define recv_worker_args(format)                                                                           \
@@ -57,17 +57,17 @@ typedef struct __attribute__((__packed__)) {
 
 namespace po = boost::program_options;
 namespace pt = boost::posix_time;
-typedef std::function<uhd::sensor_value_t(const std::string&)> get_sensor_fn_t;
+typedef std::function<uhd::sensor_value_t(const std::string &)> get_sensor_fn_t;
 
 static bool stop_signal_called = false;
 void sig_int_handler(int) { stop_signal_called = true; }
 
 template <typename samp_type>
 void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format, const std::string &wire_format,
-                      const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
-                      std::vector<size_t> channel_nums, double time_requested = 0.0, bool bw_summary = false,
-                      bool stats = false, bool null = false, bool enable_size_map = false,
-                      bool continue_on_bad_packet = false) {
+                 const std::string &file, size_t samps_per_buff, unsigned long long num_requested_samples,
+                 std::vector<size_t> channel_nums, double time_requested = 0.0, bool bw_summary = false,
+                 bool stats = false, bool null = false, bool enable_size_map = false,
+                 bool continue_on_bad_packet = false) {
 	std::cout << "================== Receive Worker =================\n";
 	// time variables for scheduling
 	uhd::time_spec_t time_now, rxTime;
@@ -112,7 +112,7 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 	uint16_t numChannels;
 
 	while (1) {
-rx_reset:
+	rx_reset:
 		rResult = recvfrom(sockfd, cmdBuf, 16, 0, (struct sockaddr *)&si_me, &slen);
 		if (rResult < 0) {
 			printf("Receiving command buffer failed (Error %d)\r\n", rResult);
@@ -143,7 +143,7 @@ rx_reset:
 		uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
 		uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-		stream_cmd.num_samps = num_requested_samples;// * channel_nums.size();
+		stream_cmd.num_samps = num_requested_samples;  // * channel_nums.size();
 
 		printf("[USRP Control] Using %ld of %ld available channels\r\n", channel_nums.size(),
 		       usrp->get_rx_num_channels());
@@ -240,7 +240,7 @@ rx_reset:
 				count++;
 				txTotal += (txResult / sizeof(samp_type));
 				usleep(20);  // intentional delay for proper context switching
-				// printf("-- RX : txTotal = %d samps\n", txTotal);
+				             // printf("-- RX : txTotal = %d samps\n", txTotal);
 			}
 			// printf("-- RX : txTotal = %d samps\n", txTotal);
 		}
@@ -252,46 +252,38 @@ rx_reset:
 	}
 }
 
-bool check_locked_sensor(std::vector<std::string> sensor_names,
-    const char* sensor_name,
-    get_sensor_fn_t get_sensor_fn,
-    double setup_time)
-{
-    if (std::find(sensor_names.begin(), sensor_names.end(), sensor_name)
-        == sensor_names.end())
-        return false;
+bool check_locked_sensor(std::vector<std::string> sensor_names, const char *sensor_name, get_sensor_fn_t get_sensor_fn,
+                         double setup_time) {
+	if (std::find(sensor_names.begin(), sensor_names.end(), sensor_name) == sensor_names.end()) return false;
 
-    auto setup_timeout = std::chrono::steady_clock::now()
-                         + std::chrono::milliseconds(int64_t(setup_time * 1000));
-    bool lock_detected = false;
+	auto setup_timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(int64_t(setup_time * 1000));
+	bool lock_detected = false;
 
-    std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
-    std::cout.flush();
+	std::cout << boost::format("Waiting for \"%s\": ") % sensor_name;
+	std::cout.flush();
 
-    while (true) {
-        if (lock_detected and (std::chrono::steady_clock::now() > setup_timeout)) {
-            std::cout << " locked." << std::endl;
-            break;
-        }
-        if (get_sensor_fn(sensor_name).to_bool()) {
-            std::cout << "+";
-            std::cout.flush();
-            lock_detected = true;
-        } else {
-            if (std::chrono::steady_clock::now() > setup_timeout) {
-                std::cout << std::endl;
-                throw std::runtime_error(
-                    str(boost::format(
-                            "timed out waiting for consecutive locks on sensor \"%s\"")
-                        % sensor_name));
-            }
-            std::cout << "_";
-            std::cout.flush();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    std::cout << std::endl;
-    return true;
+	while (true) {
+		if (lock_detected and (std::chrono::steady_clock::now() > setup_timeout)) {
+			std::cout << " locked." << std::endl;
+			break;
+		}
+		if (get_sensor_fn(sensor_name).to_bool()) {
+			std::cout << "+";
+			std::cout.flush();
+			lock_detected = true;
+		} else {
+			if (std::chrono::steady_clock::now() > setup_timeout) {
+				std::cout << std::endl;
+				throw std::runtime_error(
+				    str(boost::format("timed out waiting for consecutive locks on sensor \"%s\"") % sensor_name));
+			}
+			std::cout << "_";
+			std::cout.flush();
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+	std::cout << std::endl;
+	return true;
 }
 
 int synch_to_gps(uhd::usrp::multi_usrp::sptr usrp) {
@@ -412,9 +404,13 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 	uhd::tx_streamer::sptr tx_stream = usrp->get_tx_stream(stream_args);
 
 	// buffer for transmission
-    transmit_controlfmt *controlBuf;
-    static_assert(sizeof(transmit_controlfmt) == (sizeof(double) + sizeof(uint16_t) + sizeof(int16_t))); // Make sure this covers the right memory space
-    // Don't waste space by overextending the buffer
+	transmit_controlfmt *controlBuf;
+	static_assert(sizeof(transmit_controlfmt) == (sizeof(double) + sizeof(uint16_t) + sizeof(int16_t)));  // Make sure
+	                                                                                                      // this covers
+	                                                                                                      // the right
+	                                                                                                      // memory
+	                                                                                                      // space
+	// Don't waste space by overextending the buffer
 	std::vector<std::complex<float>> buff(total_num_samps * channel_nums.size() + sizeof(transmit_controlfmt));
 	// information
 	char *udpBuf;
@@ -424,7 +420,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 	size_t txLen;
 	size_t rSamLen;
 	uint16_t *numChans;
-    int16_t *refPower;
+	int16_t *refPower;
 	while (1) {
 		udpBuf = (char *)&buff[0];
 		rLen = 0;
@@ -436,29 +432,38 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 			rResult = recvfrom(sockfd, udpBuf, buff.size(), 0, (struct sockaddr *)&si_me, &slen);
 		} while (rResult > 0);
 		rSamLen = (rLen - sizeof(transmit_controlfmt)) / sizeof(std::complex<float>);
-		
+
 		time_now = usrp->get_time_now(0);
-		//start_time = (double *)(&buff[0] + rSamLen - 1);
-		//numChans = (size_t *)(&buff[0] + rSamLen);
-        controlBuf = (transmit_controlfmt *)(&buff[0] + rSamLen);
-        start_time = &controlBuf->startTime;
-        numChans = &controlBuf->numChans;
-        refPower = &controlBuf->refPower;
-		printf("[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %d channels, with reference power %d dBm.\n", rLen, rSamLen,
-		       *numChans, *refPower);
+		// start_time = (double *)(&buff[0] + rSamLen - 1);
+		// numChans = (size_t *)(&buff[0] + rSamLen);
+		controlBuf = (transmit_controlfmt *)(&buff[0] + rSamLen);
+		start_time = &controlBuf->startTime;
+		numChans = &controlBuf->numChans;
+		refPower = &controlBuf->refPower;
+		printf(
+		    "[USRP Control] TX: Received %ld bytes (%ld samples) from MATLAB for %d channels, with reference power %d dBm.\n",
+		    rLen, rSamLen, *numChans, *refPower);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
-        // Configure TX Power Reference for all channels
-		for (uint16_t i = 0; i < *numChans; i++) {
-            try {
-                usrp->set_tx_power_reference(*refPower, i);
-            } catch (uhd::not_implemented_error &e){
-                std::cout << "[USRP Control] Reference Power not supported, falling back to default gain" << std::endl << e.what() << std::endl;
-            } catch (uhd::runtime_error &e){
-                std::cout << "[USRP Control] Calibration data not available (Device is uncalibrated), falling back to default gain" << std::endl << e.what() << std::endl;
-            }
-        }
+		// Configure TX Power Reference for all channels
+		if (usrp->has_tx_power_reference(0)) {
+			for (uint16_t i = 0; i < *numChans; i++) {
+				try {
+					usrp->set_tx_power_reference(*refPower, i);
+                    // These catches *should* be unreachable, but...you never know
+				} catch (uhd::not_implemented_error &e) {
+					std::cout << "[USRP Control] Reference Power not supported, falling back to default gain"
+					          << std::endl
+					          << e.what() << std::endl;
+				} catch (uhd::runtime_error &e) {
+					std::cout
+					    << "[USRP Control] Calibration data not available (Device is uncalibrated), falling back to default gain"
+					    << std::endl
+					    << e.what() << std::endl;
+				}
+			}
+		}
 
 		// txtime management
 		txTime = uhd::time_spec_t(*start_time);
@@ -725,21 +730,29 @@ int UHD_SAFE_MAIN(int argc, char *argv[]) {
 	// check Ref and LO Lock detect
 	if (not vm.count("skip-lo")) {
 		check_locked_sensor(usrp->get_rx_sensor_names(0), "lo_locked",
-		                    boost::bind(&uhd::usrp::multi_usrp::get_rx_sensor, usrp, boost::placeholders::_1, 0), setup_time);
+		                    boost::bind(&uhd::usrp::multi_usrp::get_rx_sensor, usrp, boost::placeholders::_1, 0),
+		                    setup_time);
 		if (ref == "mimo")
-			check_locked_sensor(usrp->get_mboard_sensor_names(0), "mimo_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, boost::placeholders::_1, 0), setup_time);
+			check_locked_sensor(
+			    usrp->get_mboard_sensor_names(0), "mimo_locked",
+			    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, boost::placeholders::_1, 0), setup_time);
 		if (ref == "external")
-			check_locked_sensor(usrp->get_mboard_sensor_names(0), "ref_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, boost::placeholders::_1, 0), setup_time);
+			check_locked_sensor(
+			    usrp->get_mboard_sensor_names(0), "ref_locked",
+			    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, usrp, boost::placeholders::_1, 0), setup_time);
 		check_locked_sensor(tx_usrp->get_tx_sensor_names(0), "lo_locked",
-		                    boost::bind(&uhd::usrp::multi_usrp::get_tx_sensor, tx_usrp, boost::placeholders::_1, 0), setup_time);
+		                    boost::bind(&uhd::usrp::multi_usrp::get_tx_sensor, tx_usrp, boost::placeholders::_1, 0),
+		                    setup_time);
 		if (ref == "mimo")
-			check_locked_sensor(tx_usrp->get_mboard_sensor_names(0), "mimo_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, boost::placeholders::_1, 0), setup_time);
+			check_locked_sensor(
+			    tx_usrp->get_mboard_sensor_names(0), "mimo_locked",
+			    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, boost::placeholders::_1, 0),
+			    setup_time);
 		if (ref == "external")
-			check_locked_sensor(tx_usrp->get_mboard_sensor_names(0), "ref_locked",
-			                    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, boost::placeholders::_1, 0), setup_time);
+			check_locked_sensor(
+			    tx_usrp->get_mboard_sensor_names(0), "ref_locked",
+			    boost::bind(&uhd::usrp::multi_usrp::get_mboard_sensor, tx_usrp, boost::placeholders::_1, 0),
+			    setup_time);
 	}
 
 	if (total_num_samps == 0) {
