@@ -401,8 +401,6 @@ int downloadMatFiles() {
 		return -1;
 	}
 
-	matchFlag = 0;
-
 	while ((cIdx = getActiveNodeIdx(cIdx)) != -1) {
 		sysconfMtx.lock();
 		sysConf[cIdx].usrFlag = 0;
