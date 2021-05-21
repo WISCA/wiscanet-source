@@ -1,6 +1,6 @@
 clear; clc;
 test_usrp = local_usrp;
-test_usrp = test_usrp.set_usrp(0, 0, 0, 0, 0, 50000,0,0, 0, 0, 0, 0);
+test_usrp = test_usrp.set_usrp(0, 0, 0, 0, 0, 100000,0,0, 0, 0, 0, 0);
 
 sample_rate = 10e6;
 num_samps = 50000;
@@ -13,8 +13,10 @@ sine2 = exp(1i*2*pi*fc2*t).';
 numChans = 1;
 sineChan = [sine];
 
-%test_usrp.tx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+5,sineChan,numChans);
+time = 1136073818.000000000
+%time = double(uint64(posixtime(datetime('now','Timezone','UTC'))));
+%test_usrp.tx_usrp(time+20,sineChan,numChans);
 
-rxChans = test_usrp.rx_usrp(double(uint64(posixtime(datetime('now','Timezone','UTC'))))+3,numChans);
+rxChans = test_usrp.rx_usrp(time+20,numChans);
 
 test_usrp.terminate_usrp();
