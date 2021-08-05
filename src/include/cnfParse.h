@@ -13,6 +13,7 @@
  */
 #define LANG_MATLAB 1
 #define LANG_PYTHON 2
+#define LANG_GNURADIO 3
 
 /*! \typedef struct cfgData_s
  * \brief This structure contains edge node configuration information

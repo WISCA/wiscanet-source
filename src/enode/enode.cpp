@@ -260,7 +260,23 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 			txMsgEnodeRunCmpInd();
 
 			exit(1);
+        } else if (cfg.lang == LANG_GNURADIO) {
+            cout << "=====================================================\n";
+			cout << " [enode] start of GNURadio\n";
+			cout << "=====================================================\n";
+			printf("start_time = %ld \n", start_time);
+			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; python %s.py --start_time %ld < /dev/null | tee %s", cfg.matDir,
+			        cfg.mTopFile, start_time, logFn);
+			printf("%s\n", cbuf);
+			system(cbuf);
 
+			cout << "=====================================================\n";
+			cout << " [enode] end of GNURadio\n";
+			cout << "=====================================================\n";
+
+			txMsgEnodeRunCmpInd();
+
+			exit(1);
 		} else {
 			printf("No valid runtime configuration!\n");
 			exit(1);

@@ -53,6 +53,8 @@ int usrCfgParse(char* ymlFn, cfgData_t* cfg) {
 		cfg->lang = LANG_PYTHON;
 	else if (strcmp("matlab", lang.c_str()) == 0)
 		cfg->lang = LANG_MATLAB;
+    else if (strcmp("gnuradio", lang.c_str()) == 0)
+        cfg->lang = LANG_GNURADIO;
 	else
 		cfg->lang = LANG_MATLAB;  // Fall back to MATLAB as default langauge
 	printf("Runtime Environment: %s\n", lang.c_str());
