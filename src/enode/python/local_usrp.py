@@ -61,6 +61,7 @@ class LocalUSRP:
         while time.time() < start_time:
             time.sleep(200/1000000.0)
 
+        time.sleep(0.2)
         print("[Local USRP] Finished transmitting\n", flush=True)
 
     def rx_usrp(self, start_time, num_chans):
