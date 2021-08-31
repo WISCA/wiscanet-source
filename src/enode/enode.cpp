@@ -265,7 +265,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 			cout << " [enode] start of GNURadio\n";
 			cout << "=====================================================\n";
 			printf("start_time = %ld \n", start_time);
-			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; python %s.py --start_time %ld < /dev/null | tee %s", cfg.matDir,
+			sprintf(cbuf, "cd ../mat; mkdir -p ../log; cd %s; python %s.py --start-time %ld < /dev/null | tee %s", cfg.matDir,
 			        cfg.mTopFile, start_time, logFn);
 			printf("%s\n", cbuf);
 			system(cbuf);
