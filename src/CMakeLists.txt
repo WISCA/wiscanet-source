@@ -3,7 +3,7 @@ project(WISCANET VERSION 0.9.1)
 
 # If desired, -DCMAKE_INSTALL_PREFIX can be used to point to another home directory/wdemo/ folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set (CMAKE_INSTALL_PREFIX "/home/wisca/wdemo/" CACHE PATH "Default WISCA install path" FORCE )
+    set (CMAKE_INSTALL_PREFIX "/home/jholtom/wdemo/" CACHE PATH "Default WISCA install path" FORCE )
 endif()
 
 # Build Types

@@ -445,8 +445,12 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 		    rLen, rSamLen, *numChans, *refPower);
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
+        // Kludge to get gain control instead of power reference
+		for (uint16_t i = 0; i < *numChans; i++) {
+				usrp->set_tx_gain(*refPower, i);
+		}
 
-		// Configure TX Power Reference for all channels
+        // Configure TX Power Reference for all channels
 		if (usrp->has_tx_power_reference(0)) {
 			for (uint16_t i = 0; i < *numChans; i++) {
 				try {
