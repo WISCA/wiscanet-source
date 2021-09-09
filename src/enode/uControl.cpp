@@ -135,7 +135,7 @@ void recv_worker(uhd::usrp::multi_usrp::sptr usrp, const std::string &cpu_format
 			goto rx_reset;
 		}
 
-		timeout = 0.01;  // Put some slack in there for huge applications, doing MIMO
+		timeout = 0.1;  // Put some slack in there for huge applications, doing MIMO
 
 		// create a receive streamer
 		uhd::stream_args_t stream_args(cpu_format, wire_format);
@@ -493,7 +493,7 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 			buff_ptrs.push_back(&tx_buffers[i].front());
 		}
 		// send the contents of tx buffer
-		timeout = 0.01;
+		timeout = 0.1;
 
 		txLen = tx_stream->send(buff_ptrs, total_num_samps, md, timeout);
 		if (txLen < total_num_samps) {
