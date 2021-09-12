@@ -300,7 +300,7 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 
 void rxMsgEnodeStopReq(cMsgEnodeStopReq_t *pload) {
 	char cbuf[2048];
-
+    // TODO: Have a nice way of killing Python/GNURadio
 	sprintf(cbuf, "ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
 	system(cbuf);
 #ifdef SUDO_MODE
