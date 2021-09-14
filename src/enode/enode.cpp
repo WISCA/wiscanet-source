@@ -300,9 +300,14 @@ void rxMsgEnodeRunReq(cMsgEnodeRunReq_t *pload) {
 
 void rxMsgEnodeStopReq(cMsgEnodeStopReq_t *pload) {
 	char cbuf[2048];
-    // TODO: Have a nice way of killing Python/GNURadio
-	sprintf(cbuf, "ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
-	system(cbuf);
+	if (cfg.lang == LANG_PYTHON || cfg.lang == LANG_GNURADIO ) {
+        sprintf(cbuf, "ps -A grep \"[p]ython %s\"  | awk '{print $1}' | xargs kill -9 > /dev/null", cfg.mTopFile);
+	    system(cbuf);
+    }
+    else {
+    	sprintf(cbuf, "ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
+    	system(cbuf);
+    }
 #ifdef SUDO_MODE
 	sprintf(cbuf, "ps -A | grep uControl | awk '{print $1}' | sudo xargs kill -9 > /dev/null");
 #else
@@ -338,7 +343,14 @@ void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload) {
 }
 
 void rxMsgEnodeTermReq(cMsgEnodeTermReq_t *pload) {
-	system("ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
+	if (cfg.lang == LANG_PYTHON || cfg.lang == LANG_GNURADIO ) {
+        sprintf(cbuf, "ps -A grep \"[p]ython %s\"  | awk '{print $1}' | xargs kill -9 > /dev/null", cfg.mTopFile);
+	    system(cbuf);
+    }
+    else {
+    	sprintf(cbuf, "ps -A | grep MATLAB | awk '{print $1}' | xargs kill -9 > /dev/null");
+    	system(cbuf);
+    }
 #ifdef SUDO_MODE
 	system("ps -A | grep uControl | awk '{print $1}' | sudo xargs kill -9 > /dev/null");
 #else
