@@ -343,6 +343,7 @@ void rxMsgEnodeLogReq(cMsgEnodeLogReq_t *pload) {
 }
 
 void rxMsgEnodeTermReq(cMsgEnodeTermReq_t *pload) {
+	char cbuf[2048];
 	if (cfg.lang == LANG_PYTHON || cfg.lang == LANG_GNURADIO ) {
         sprintf(cbuf, "ps -A grep \"[p]ython %s\"  | awk '{print $1}' | xargs kill -9 > /dev/null", cfg.mTopFile);
 	    system(cbuf);
