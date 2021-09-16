@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.2] - 2021-09-16
+
+### Added
+- Support for GNURadio
+- Reference Power Support (For calibrated radio frontends)
+
+### Changed
+- Fixed issues compiling on non-x86_64 architectures (Raspberry Pi and Embedded Ettus Radios now work!) 
+- Fixed subtle bugs with multi-channel control
+
 ## [0.9.1] - 2021-02-08
 
 ### Added

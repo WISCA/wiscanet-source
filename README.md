@@ -44,8 +44,9 @@
   - 9940 - uControl TX
   - 9944 - uControl RX
   - 9945 - uControl RC
-- MATLAB or Python for baseband execution on edge nodes
-  - Both subsystems provided in edge node source, requires `matlab` or `python` (or both) on `$PATH`.
+- MATLAB, Python or GNURadio for baseband execution on edge nodes
+  - All subsystems provided in edge node source, requires `matlab` or `python` (or both) on `$PATH`.
+  - GNURadio flowgraphs are executed like `python flowgraph.py --start-time $time`
 
 # Legal
-Copyright 2017 - 2020, WISCANet contributors
+Copyright 2017 - 2021, WISCANet contributors
