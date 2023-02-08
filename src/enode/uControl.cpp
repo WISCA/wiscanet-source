@@ -446,25 +446,6 @@ void transmit_worker(uhd::usrp::multi_usrp::sptr usrp, size_t total_num_samps, s
 		// printf("start_time = %f, prev_time = %f, time_now = %f\n", *start_time, prev_txtime.get_real_secs(),
 		// time_now.get_real_secs());
 
-		// Configure TX Power Reference for all channels
-		if (usrp->has_tx_power_reference(0)) {
-			for (uint16_t i = 0; i < *numChans; i++) {
-				try {
-					usrp->set_tx_power_reference(*refPower, i);
-                    // These catches *should* be unreachable, but...you never know
-				} catch (uhd::not_implemented_error &e) {
-					std::cout << "[USRP Control] Reference Power not supported, falling back to default gain"
-					          << std::endl
-					          << e.what() << std::endl;
-				} catch (uhd::runtime_error &e) {
-					std::cout
-					    << "[USRP Control] Calibration data not available (Device is uncalibrated), falling back to default gain"
-					    << std::endl
-					    << e.what() << std::endl;
-				}
-			}
-		}
-
 		// txtime management
 		txTime = uhd::time_spec_t(*start_time);
 		if (prev_txtime.get_real_secs() > time_now.get_real_secs()) {
