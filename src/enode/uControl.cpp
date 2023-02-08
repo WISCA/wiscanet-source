@@ -33,6 +33,7 @@
 #include <csignal>
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include <uhd/exception.hpp>
 #include <uhd/types/tune_request.hpp>
 #include <uhd/usrp/multi_usrp.hpp>
